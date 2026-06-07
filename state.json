@@ -386,7 +386,7 @@
     {
       "id": 2,
       "name": "Cuenta de ahorro 2",
-      "saldo": 2600,
+      "saldo": 2460.9,
       "tipo": "ahorro",
       "rent": 1.25,
       "emoji": "🏦",
@@ -405,5 +405,5 @@
   ],
   "retos": [],
   "manualTxns": [],
-  "lastUpdated": "2026-06-07T18:11:56.746Z"
+  "lastUpdated": "2026-06-07T18:14:04.379Z"
 }
