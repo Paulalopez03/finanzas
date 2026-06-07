@@ -1,8 +1,6 @@
 <!DOCTYPE html>
 <html lang="es" data-theme="dark">
-<head> <link rel="icon" href="icono.png">
-<link rel="apple-touch-icon" href="icono.png">
-<meta name="msapplication-TileImage" content="icono.png">
+<head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#0d0c12">
@@ -10,6 +8,9 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Paula €">
 <title>Paula · Finanzas</title>
+<link rel="icon" href="icono.png">
+<link rel="apple-touch-icon" href="icono.png">
+<meta name="msapplication-TileImage" content="icono.png">
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
   [data-theme="dark"] {
@@ -477,6 +478,270 @@
     }
   }
 
+
+
+  /* ── RESPONSIVE HARDENING FINAL ──────────────────────────────
+     Esta capa va al final para mandar sobre estilos inline y reglas previas. */
+  html, body {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+  img, svg, canvas, video, iframe {
+    max-width: 100%;
+  }
+  .card, .saving-card, .modal, .panel, .grid, .form-row {
+    min-width: 0;
+  }
+  .page-header {
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+  .page-header > * {
+    min-width: 0;
+  }
+
+  @media (max-width: 1024px) {
+    #main {
+      padding: 24px;
+    }
+    .grid-4,
+    .grid-3 {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .grid-2,
+    .grid-1-2,
+    .grid-2-1 {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 768px) {
+    html, body, #app, #main {
+      width: 100% !important;
+      max-width: 100% !important;
+      overflow-x: hidden !important;
+    }
+    body {
+      position: relative;
+    }
+    #main {
+      margin-left: 0 !important;
+      padding: calc(66px + env(safe-area-inset-top)) 12px calc(92px + env(safe-area-inset-bottom)) !important;
+    }
+    #mobile-topbar {
+      padding: calc(12px + env(safe-area-inset-top)) 12px 12px !important;
+    }
+    #bottom-nav {
+      padding-bottom: calc(10px + env(safe-area-inset-bottom)) !important;
+    }
+    .page-header {
+      flex-direction: column !important;
+      align-items: stretch !important;
+      margin-bottom: 20px !important;
+    }
+    .page-header > div,
+    .page-header > button,
+    .page-header > select,
+    .page-header .btn,
+    .page-header input,
+    .page-header select {
+      width: 100% !important;
+      max-width: 100% !important;
+    }
+    .page-header > div[style*="display:flex"],
+    .card > div[style*="display:flex"],
+    .filter-bar,
+    .tabs {
+      flex-wrap: wrap !important;
+      min-width: 0 !important;
+    }
+    .grid,
+    .grid-4,
+    .grid-3,
+    .grid-2,
+    .grid-1-2,
+    .grid-2-1,
+    .form-row,
+    .regla-buckets-grid,
+    #regla-cats-area,
+    #fijos-cards-area,
+    #cat-cards-area,
+    #ahorro-cards,
+    #pat-cuentas,
+    #inv-stats,
+    div[style*="grid-template-columns:repeat(4,1fr)"],
+    div[style*="grid-template-columns:repeat(4,minmax(0,1fr))"],
+    div[style*="grid-template-columns:repeat(3,1fr)"],
+    div[style*="grid-template-columns:1fr 1fr 1fr"],
+    div[style*="grid-template-columns:1fr 1fr"] {
+      grid-template-columns: 1fr !important;
+      width: 100% !important;
+      max-width: 100% !important;
+    }
+    #reto-calendario {
+      grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
+      gap: 4px !important;
+    }
+    .drawer-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    }
+    .card {
+      padding: 16px !important;
+      max-width: 100% !important;
+      overflow-x: visible !important;
+    }
+    .card[style*="padding:0"],
+    .card:has(table) {
+      padding: 0 !important;
+      overflow-x: auto !important;
+      -webkit-overflow-scrolling: touch;
+    }
+    table,
+    .tbl {
+      width: 100% !important;
+      min-width: 560px;
+    }
+    .donut-wrap + .legend,
+    .legend {
+      width: 100%;
+    }
+    #donut-svg,
+    #pat-donut {
+      flex-shrink: 0;
+    }
+    .txn-item,
+    .pred-item,
+    .legend-item {
+      min-width: 0;
+    }
+    .txn-name,
+    .legend-name {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    input, select, textarea, .btn {
+      max-width: 100%;
+    }
+    .tabs {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .tab {
+      min-width: max-content;
+      padding-left: 12px;
+      padding-right: 12px;
+    }
+    .modal-overlay {
+      padding: 12px;
+    }
+    .modal,
+    #modal-customizer > div,
+    #modal-gh-config > div {
+      width: min(100%, 95vw) !important;
+      max-width: 95vw !important;
+      max-height: 88vh !important;
+      overflow-y: auto !important;
+    }
+    #panel-regla .card > div[style*="justify-content:space-between"],
+    #panel-patrimonio .card > div[style*="justify-content:space-between"],
+    #panel-retos .card > div[style*="display:flex"],
+    #panel-inversion .card > div[style*="display:grid"] {
+      gap: 12px !important;
+    }
+    #regla-buckets > div,
+    #regla-cats-area > div,
+    #inv-stats > div {
+      width: 100% !important;
+      max-width: 100% !important;
+    }
+  }
+
+  @media (max-width: 420px) {
+    #main {
+      padding-left: 10px !important;
+      padding-right: 10px !important;
+    }
+    .card {
+      padding: 14px !important;
+      border-radius: 14px !important;
+    }
+    .page-title {
+      font-size: 20px !important;
+      overflow-wrap: anywhere;
+    }
+    .topbar-logo {
+      font-size: 16px !important;
+    }
+    .topbar-balance {
+      font-size: 12px !important;
+    }
+    .bnav-item,
+    .bnav-more {
+      padding-left: 4px !important;
+      padding-right: 4px !important;
+      font-size: 9px !important;
+    }
+    .bnav-item .bnav-icon,
+    .bnav-more .bnav-icon {
+      font-size: 18px !important;
+    }
+    .drawer-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+    .stat-value,
+    #regla-nomina,
+    #pat-total {
+      font-size: clamp(20px, 9vw, 32px) !important;
+    }
+  }
+
+
+  /* ── PAGINACION RESPONSIVE ── */
+  #txn-pagination {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+  #txn-pagination .btn {
+    flex: 0 0 auto;
+  }
+  @media (max-width: 768px) {
+    #txn-pagination {
+      justify-content: center !important;
+      gap: 6px !important;
+      padding: 0 2px 8px !important;
+      margin-top: 14px !important;
+      width: 100% !important;
+      max-width: 100% !important;
+      overflow-x: hidden !important;
+    }
+    #txn-pagination .btn {
+      min-width: 34px !important;
+      height: 34px !important;
+      padding: 0 10px !important;
+      border-radius: 10px !important;
+      font-size: 12px !important;
+      justify-content: center !important;
+    }
+    #txn-pagination .pagination-ellipsis {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 22px;
+      height: 34px;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+  }
+
 </style>
 </head>
 <body>
@@ -590,7 +855,7 @@
         <div class="page-subtitle" id="dash-subtitle">Cargando datos…</div>
       </div>
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-        <select id="dash-period" onchange="saveDashPrefs();renderDashboard()" style="width:auto">
+        <select id="dash-period" onchange="saveDashPrefs();saveUIPrefsNow();renderDashboard()" style="width:auto">
           <option value="month_start" selected>Desde inicio de mes</option>
           <option value="last_30">Últimos 30 días</option>
           <option value="last_90">Últimos 90 días</option>
@@ -908,7 +1173,7 @@
         <div class="page-title">Regla 50/30/20</div>
         <div class="page-subtitle">¿Tu dinero está bien repartido?</div>
       </div>
-      <select id="regla-period" onchange="saveReglaPrefs();renderRegla()" style="width:auto">
+      <select id="regla-period" onchange="saveReglaPrefs();saveUIPrefsNow();renderRegla()" style="width:auto">
         <option value="0">Mes actual (del 1 al hoy)</option>
         <option value="1">Último mes completo</option>
         <option value="3" selected>Media 3 meses</option>
@@ -925,7 +1190,7 @@
         </div>
         <div style="text-align:right">
           <label style="display:block;margin-bottom:6px">Ajusta tu nómina</label>
-          <input type="number" id="regla-nomina-input" value="1452.66" step="1" style="width:160px;text-align:right" oninput="saveReglaPrefs();renderRegla()">
+          <input type="number" id="regla-nomina-input" value="1452.66" step="1" style="width:160px;text-align:right" oninput="saveReglaPrefs();saveUIPrefsNow();renderRegla()">
         </div>
       </div>
       <div id="regla-intro-box"></div>
@@ -1978,6 +2243,7 @@ function showPanel(id) {
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   document.getElementById('panel-' + id).classList.add('active');
   localStorage.setItem(LAST_PANEL_KEY, id); // remember for reload
+  writeUIPrefs({ lastPanel: id });
   // Update active state in dynamic nav
   document.querySelectorAll('#sortable-nav .nav-item').forEach(el => {
     el.classList.toggle('active', el.dataset.panel === id);
@@ -2248,12 +2514,38 @@ function renderMovimientos() {
   // Pagination
   const pg = document.getElementById('txn-pagination');
   pg.innerHTML = '';
-  for (let i=0; i<pages; i++) {
+
+  const addPageBtn = (pageIndex, label = null) => {
     const b = document.createElement('button');
-    b.className = 'btn btn-secondary btn-sm' + (i===txnPage?' btn-primary':'');
-    b.textContent = i+1;
-    b.onclick = () => { txnPage = i; renderMovimientos(); };
+    b.className = 'btn btn-secondary btn-sm' + (pageIndex === txnPage ? ' btn-primary' : '');
+    b.textContent = label || (pageIndex + 1);
+    b.onclick = () => { txnPage = pageIndex; renderMovimientos(); };
     pg.appendChild(b);
+  };
+  const addEllipsis = () => {
+    const span = document.createElement('span');
+    span.className = 'pagination-ellipsis';
+    span.textContent = '…';
+    pg.appendChild(span);
+  };
+
+  if (pages <= 1) return;
+
+  const isMobile = window.matchMedia && window.matchMedia('(max-width: 768px)').matches;
+  if (isMobile && pages > 7) {
+    addPageBtn(Math.max(0, txnPage - 1), '‹');
+    addPageBtn(0);
+
+    const start = Math.max(1, txnPage - 1);
+    const end = Math.min(pages - 2, txnPage + 1);
+    if (start > 1) addEllipsis();
+    for (let i = start; i <= end; i++) addPageBtn(i);
+    if (end < pages - 2) addEllipsis();
+
+    addPageBtn(pages - 1);
+    addPageBtn(Math.min(pages - 1, txnPage + 1), '›');
+  } else {
+    for (let i = 0; i < pages; i++) addPageBtn(i);
   }
 }
 
@@ -4588,6 +4880,56 @@ function refreshProjectPrompt() {
 }
 
 
+
+// ── UI PREFS HARDENING ─────────────────────────────────────────────
+const UI_PREFS_KEY = 'paula_ui_prefs_v1';
+function readUIPrefs() {
+  try { return JSON.parse(localStorage.getItem(UI_PREFS_KEY) || '{}'); }
+  catch(e) { return {}; }
+}
+function writeUIPrefs(patch) {
+  try { localStorage.setItem(UI_PREFS_KEY, JSON.stringify({ ...readUIPrefs(), ...patch })); }
+  catch(e) { console.warn('No se pudieron guardar las preferencias visuales', e); }
+}
+function saveUIPrefsNow() {
+  writeUIPrefs({
+    lastPanel: localStorage.getItem(LAST_PANEL_KEY) || 'dashboard',
+    dashPeriod: document.getElementById('dash-period')?.value || null,
+    reglaPeriod: document.getElementById('regla-period')?.value || null,
+    reglaNomina: document.getElementById('regla-nomina-input')?.value || null,
+    txnMonth: document.getElementById('txn-month-filter')?.value || '',
+    txnType: document.getElementById('txn-type-filter')?.value || '',
+    txnCat: document.getElementById('txn-cat-filter')?.value || '',
+  });
+}
+function loadUIPrefsNow() {
+  const prefs = readUIPrefs();
+  const setSelect = (id, value) => {
+    const el = document.getElementById(id);
+    if (el && value !== null && value !== undefined && [...el.options].some(o => o.value === String(value))) el.value = String(value);
+  };
+  const setInput = (id, value) => {
+    const el = document.getElementById(id);
+    if (el && value !== null && value !== undefined && value !== '') el.value = value;
+  };
+  setSelect('dash-period', prefs.dashPeriod);
+  setSelect('regla-period', prefs.reglaPeriod);
+  setInput('regla-nomina-input', prefs.reglaNomina);
+  setSelect('txn-type-filter', prefs.txnType);
+  setSelect('txn-cat-filter', prefs.txnCat);
+  setSelect('txn-month-filter', prefs.txnMonth);
+}
+function setupUIPrefsAutosave() {
+  ['dash-period','regla-period','regla-nomina-input','txn-month-filter','txn-type-filter','txn-cat-filter'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el || el.dataset.uiPrefsBound) return;
+    el.addEventListener('change', saveUIPrefsNow);
+    el.addEventListener('input', saveUIPrefsNow);
+    el.dataset.uiPrefsBound = '1';
+  });
+  window.addEventListener('beforeunload', saveUIPrefsNow);
+}
+
 function init() {
   initTheme();
   transactions = parseCSV();
@@ -4600,18 +4942,20 @@ function init() {
   ensureAhorroCategory();
   setupAutoSave();
   buildNav();       // build dynamic sortable sidebar
-  loadDashPrefs();
-  loadReglaPrefs();
-  // Restore last active panel
-  const _lastPanel = localStorage.getItem(LAST_PANEL_KEY);
-  if (_lastPanel && document.getElementById('panel-' + _lastPanel)) {
-    showPanel(_lastPanel);
-  }
   populateModalSelects();
   populateMonthFilter();
   loadDashPrefs();
   loadReglaPrefs();
-  renderDashboard();
+  loadUIPrefsNow();
+  setupUIPrefsAutosave();
+  // Restore last active panel and its visual filters
+  const _prefs = readUIPrefs();
+  const _lastPanel = _prefs.lastPanel || localStorage.getItem(LAST_PANEL_KEY);
+  if (_lastPanel && document.getElementById('panel-' + _lastPanel)) {
+    showPanel(_lastPanel);
+  } else {
+    renderDashboard();
+  }
   // Auto-sync from GitHub on startup
   setTimeout(() => {
     const cfg = loadGHConfig();
