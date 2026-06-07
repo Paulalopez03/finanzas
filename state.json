@@ -1,4 +1,6 @@
 {
+  "schemaVersion": 3,
+  "clientId": "client_u4a4sjvb9ip_mq47igzr",
   "categories": [
     {
       "id": "supermercado",
@@ -423,13 +425,24 @@
   "manualTxns": [
     {
       "id": 1780860731201,
-      "name": "Ahorr9 ",
+      "name": "Ahorr9",
+      "amount": -103,
       "date": "2026-06-07T00:00:00.000Z",
-      "amount": 103,
       "category": "ahorro",
       "note": "",
-      "manual": true
+      "impulsivo": false,
+      "manual": true,
+      "balanceApplied": true
     }
   ],
-  "lastUpdated": "2026-06-07T19:47:29.314Z"
+  "uiPrefs": {
+    "lastPanel": "movimientos",
+    "dashPeriod": "month_start",
+    "reglaPeriod": "0",
+    "reglaNomina": "1452.66",
+    "txnMonth": "",
+    "txnType": "",
+    "txnCat": ""
+  },
+  "lastUpdated": "2026-06-07T20:01:28.820Z"
 }
