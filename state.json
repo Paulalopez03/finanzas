@@ -436,7 +436,7 @@
     }
   ],
   "uiPrefs": {
-    "lastPanel": "movimientos",
+    "lastPanel": "inversion",
     "dashPeriod": "month_start",
     "reglaPeriod": "0",
     "reglaNomina": "1452.66",
@@ -444,5 +444,5 @@
     "txnType": "",
     "txnCat": ""
   },
-  "lastUpdated": "2026-06-07T20:01:28.820Z"
+  "lastUpdated": "2026-06-07T20:20:06.353Z"
 }
