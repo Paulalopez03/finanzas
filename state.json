@@ -312,6 +312,22 @@
       ]
     },
     {
+      "id": "ahorro",
+      "name": "Ahorro",
+      "emoji": "🏦",
+      "color": "#34d399",
+      "keywords": [
+        "ahorro",
+        "cuenta ahorro",
+        "cuenta de ahorro",
+        "cuenta remunerada",
+        "saving",
+        "savings",
+        "fondo emergencia",
+        "apartado ahorro"
+      ]
+    },
+    {
       "id": "traspaso",
       "name": "Traspaso (movimiento interno)",
       "emoji": "🔄",
@@ -405,5 +421,5 @@
   ],
   "retos": [],
   "manualTxns": [],
-  "lastUpdated": "2026-06-07T19:12:27.476Z"
+  "lastUpdated": "2026-06-07T19:27:50.358Z"
 }
