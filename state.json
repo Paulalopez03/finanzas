@@ -1,6 +1,6 @@
 {
   "schemaVersion": 3,
-  "clientId": "client_u4a4sjvb9ip_mq47igzr",
+  "clientId": "client_rq3hsig0ri_mq47is9m",
   "categories": [
     {
       "id": "supermercado",
@@ -436,13 +436,13 @@
     }
   ],
   "uiPrefs": {
-    "lastPanel": "analisis",
+    "lastPanel": "automatizaciones",
     "dashPeriod": "month_start",
-    "reglaPeriod": "0",
+    "reglaPeriod": "3",
     "reglaNomina": "1452.66",
     "txnMonth": "",
     "txnType": "",
     "txnCat": ""
   },
-  "lastUpdated": "2026-06-07T20:21:20.246Z"
+  "lastUpdated": "2026-06-07T20:23:28.285Z"
 }
