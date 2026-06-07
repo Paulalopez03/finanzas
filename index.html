@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html lang="es" data-theme="dark">
 <head>
-  
+
+    
   <link rel="icon" href="icono.png">
 <link rel="apple-touch-icon" href="icono.png">
 <meta name="msapplication-TileImage" content="icono.png">
+<meta charset="UTF-8">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#0d0c12">
@@ -3855,93 +3857,86 @@ function saveGHConfig(cfg) {
   localStorage.setItem(GH_CONFIG_KEY, JSON.stringify(cfg));
 }
 
-// Called on app startup — tries to fetch pending.json from GitHub
+// ═══════════════════════════════════════════════════════════════════
+//  GITHUB SYNC — fuente de verdad única para todos los dispositivos
+//
+//  Flujo al abrir la app:
+//  1. Lee state.json  → aplica retos, metas, categorías, límites, cuentas
+//  2. Lee pending.json → importa movimientos nuevos de Claude
+//  3. Si había movimientos en pending → actualiza index.html (CSV) + state.json
+//  4. Limpia pending.json
+//
+//  Flujo al hacer cambios (retos, metas, etc.):
+//  → saveToGitHub() sube state.json con el estado actual
+// ═══════════════════════════════════════════════════════════════════
+
 async function autoSyncFromGitHub() {
   const cfg = loadGHConfig();
-
-  if (!cfg || !cfg.owner || !cfg.repo) {
+  if (!cfg || !cfg.owner || !cfg.repo || !cfg.token) {
     updateSyncBadge('none');
     return;
   }
 
   updateSyncBadge('syncing');
+
   try {
-    const url = `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/pending.json`;
-    const headers = {
-      'Authorization': 'token ' + cfg.token,
-      'Accept': 'application/vnd.github.v3+json'
-    };
+    // ── Step 1: Read state.json (retos, metas, límites, etc.) ──
+    await pullStateFromGitHub(cfg);
 
-    const res = await fetch(url, { headers });
+    // ── Step 2: Read pending.json (new movements from Claude) ──
+    const pending = await readFileFromGitHub(cfg, 'pending.json');
+    if (!pending) { updateSyncBadge('empty'); return; }
 
-    if (res.status === 404) { updateSyncBadge('empty'); return; }
-    if (res.status === 401 || res.status === 403) {
-      updateSyncBadge('error', 0, 'Token inválido o sin permisos — revisa la config');
-      return;
-    }
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-
-    const data = await res.json();
-    const sha = data.sha;
-
-    // Strip ALL whitespace from base64 before decoding (GitHub adds newlines every 60 chars)
-    const b64 = (data.content || '').replace(/\s/g, '');
-    if (!b64) { updateSyncBadge('empty'); return; }
-
-    let decoded;
-    try {
-      // Handle UTF-8 characters correctly
-      decoded = decodeURIComponent(escape(atob(b64)));
-    } catch(e) {
-      decoded = atob(b64);
-    }
-
-    let items;
-    try {
-      items = JSON.parse(decoded);
-    } catch(e) {
-      updateSyncBadge('error', 0, 'pending.json tiene formato incorrecto');
-      return;
-    }
-
+    const items = pending.items;
     if (!Array.isArray(items) || items.length === 0) {
       updateSyncBadge('empty');
       return;
     }
 
-    // Import movements
+    // ── Step 3: Import movements into transactions ──
     let added = 0;
+    const newCsvLines = [];
     items.forEach(t => {
       try {
         const dateStr = t.date || new Date().toISOString().split('T')[0];
         const [y, m, d] = dateStr.split('-');
+        const dateObj = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
         const validCat = categories.find(c => c.id === t.category);
         const cat = validCat ? t.category : autoCategory(t.name || '', parseFloat(t.amount) || 0);
-        transactions.unshift({
+        const txn = {
           id: Date.now() + added,
-          name: (t.name || 'Sync Claude').trim(),
+          name: (t.name || 'Claude').trim(),
           amount: parseFloat(t.amount) || 0,
-          date: new Date(parseInt(y), parseInt(m) - 1, parseInt(d)),
+          date: dateObj,
           category: cat,
           note: t.note || '🤖 Añadido por Claude',
           impulsivo: false,
           manual: true
-        });
+        };
+        transactions.unshift(txn);
+        // Also build CSV line to embed in HTML
+        const dd = String(dateObj.getDate()).padStart(2,'0');
+        const mm = String(dateObj.getMonth()+1).padStart(2,'0');
+        const yyyy = dateObj.getFullYear();
+        newCsvLines.push(`${txn.name},${dd}/${mm}/${yyyy},${txn.amount}`);
         added++;
-      } catch(e) {
-        console.warn('Error importing movement:', t, e);
-      }
+      } catch(e) { console.warn('Import error:', t, e); }
     });
 
-    // Clear pending.json after reading
-    await clearPendingJSON(cfg, sha);
+    // ── Step 4: Update index.html in GitHub (embed new CSV lines) ──
+    await embedCsvLinesInHTML(cfg, newCsvLines);
+
+    // ── Step 5: Save full state to state.json ──
+    await pushStateToGitHub(cfg);
+
+    // ── Step 6: Clear pending.json ──
+    await writeFileToGitHub(cfg, 'pending.json', '[]', pending.sha, '🧹 Clear pending after import');
 
     updateSyncBadge('ok', added);
-    if (added > 0) {
-      renderDashboard();
-      if (typeof populateMonthFilter === 'function') populateMonthFilter();
-      showToast(`✅ ${added} movimiento${added > 1 ? 's' : ''} nuevos desde Claude`);
-    }
+    saveAppState(); // also update localStorage cache
+    renderDashboard();
+    if (typeof populateMonthFilter === 'function') populateMonthFilter();
+    showToast(`✅ ${added} movimiento${added > 1 ? 's' : ''} nuevos desde Claude`);
 
   } catch(e) {
     console.warn('GitHub sync failed:', e);
@@ -3949,29 +3944,156 @@ async function autoSyncFromGitHub() {
   }
 }
 
-async function clearPendingJSON(cfg, sha) {
+// ── Read a file from GitHub, returns { items, sha, raw } or null ──
+async function readFileFromGitHub(cfg, filename) {
   try {
     const res = await fetch(
-      `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/pending.json`,
-      {
-        method: 'PUT',
-        headers: {
-          'Authorization': 'token ' + cfg.token,
-          'Content-Type': 'application/json',
-          'Accept': 'application/vnd.github.v3+json'
-        },
-        body: JSON.stringify({
-          message: '🧹 Clear pending.json after import',
-          content: btoa('[]'),
-          sha: sha
-        })
-      }
+      `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/${filename}`,
+      { headers: { 'Authorization': 'token ' + cfg.token, 'Accept': 'application/vnd.github.v3+json' } }
     );
-    if (!res.ok) console.warn('clearPendingJSON failed:', res.status, await res.text());
+    if (res.status === 404) return null;
+    if (!res.ok) throw new Error(`${filename}: HTTP ${res.status}`);
+    const data = await res.json();
+    const b64 = (data.content || '').replace(/\s/g, '');
+    let decoded;
+    try { decoded = decodeURIComponent(escape(atob(b64))); }
+    catch(e) { decoded = atob(b64); }
+    let items;
+    try { items = JSON.parse(decoded); } catch(e) { items = []; }
+    return { items, sha: data.sha, raw: decoded };
   } catch(e) {
-    console.warn('Could not clear pending.json:', e);
+    console.warn(`readFileFromGitHub(${filename}) error:`, e);
+    return null;
   }
 }
+
+// ── Write a file to GitHub ──
+async function writeFileToGitHub(cfg, filename, content, sha, message) {
+  const body = {
+    message: message || `Update ${filename}`,
+    content: btoa(unescape(encodeURIComponent(content)))
+  };
+  if (sha) body.sha = sha;
+  const res = await fetch(
+    `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/${filename}`,
+    {
+      method: 'PUT',
+      headers: {
+        'Authorization': 'token ' + cfg.token,
+        'Content-Type': 'application/json',
+        'Accept': 'application/vnd.github.v3+json'
+      },
+      body: JSON.stringify(body)
+    }
+  );
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`writeFileToGitHub(${filename}) HTTP ${res.status}: ${err}`);
+  }
+  return await res.json();
+}
+
+// ── Pull state.json from GitHub and apply to app ──
+async function pullStateFromGitHub(cfg) {
+  const file = await readFileFromGitHub(cfg, 'state.json');
+  if (!file || !file.items || typeof file.items !== 'object') return;
+  const s = file.items;
+  // Apply each state piece, keeping local data if GitHub has none
+  if (Array.isArray(s.categories) && s.categories.length) categories = s.categories;
+  if (Array.isArray(s.fixedExpenses)) fixedExpenses = s.fixedExpenses;
+  if (Array.isArray(s.limits)) limits = s.limits;
+  if (Array.isArray(s.savingGoals)) savingGoals = s.savingGoals;
+  if (Array.isArray(s.cuentas) && s.cuentas.length) cuentas = s.cuentas;
+  if (Array.isArray(s.retos)) {
+    retos = s.retos.map(r => ({ ...r, start: new Date(r.start) }));
+  }
+  // Merge manual transactions from state (ones not in the base CSV)
+  if (Array.isArray(s.manualTxns)) {
+    const existingIds = new Set(transactions.map(t => t.id));
+    s.manualTxns.forEach(t => {
+      if (!existingIds.has(t.id)) {
+        transactions.unshift(reviveTxn(t));
+      }
+    });
+    transactions.sort((a, b) => b.date - a.date);
+  }
+  console.log('✅ State pulled from GitHub');
+}
+
+// ── Push current state to state.json on GitHub ──
+async function pushStateToGitHub(cfg) {
+  // Get current SHA of state.json first
+  const existing = await readFileFromGitHub(cfg, 'state.json');
+  const sha = existing ? existing.sha : null;
+
+  const manualTxns = transactions
+    .filter(t => t.manual)
+    .map(serializeTxn);
+
+  const state = {
+    categories,
+    fixedExpenses,
+    limits,
+    savingGoals,
+    cuentas,
+    retos: retos.map(r => ({ ...r, start: r.start instanceof Date ? r.start.toISOString() : r.start })),
+    manualTxns,
+    lastUpdated: new Date().toISOString()
+  };
+
+  await writeFileToGitHub(cfg, 'state.json', JSON.stringify(state, null, 2), sha, '💾 Sync state from app');
+  console.log('✅ State pushed to GitHub');
+}
+
+// ── Embed new CSV lines into index.html on GitHub ──
+async function embedCsvLinesInHTML(cfg, newLines) {
+  if (!newLines.length) return;
+
+  // Read current index.html from GitHub
+  const file = await readFileFromGitHub(cfg, 'index.html');
+  if (!file) throw new Error('No se pudo leer index.html desde GitHub');
+
+  // Find RAW_CSV and prepend new lines (newest first)
+  const marker = 'const RAW_CSV = `';
+  const rawIdx = file.raw.indexOf(marker);
+  if (rawIdx === -1) throw new Error('No se encontró RAW_CSV en index.html');
+
+  const insertPos = rawIdx + marker.length;
+  const newContent = file.raw.slice(0, insertPos) +
+    newLines.join('\n') + '\n' +
+    file.raw.slice(insertPos);
+
+  await writeFileToGitHub(cfg, 'index.html', newContent, file.sha, `📊 Add ${newLines.length} movements from Claude`);
+  console.log(`✅ Embedded ${newLines.length} lines into index.html`);
+}
+
+// ── Save state to GitHub (called after user makes changes) ──
+async function saveToGitHub() {
+  const cfg = loadGHConfig();
+  if (!cfg || !cfg.token) return; // no config, skip silently
+  try {
+    await pushStateToGitHub(cfg);
+    updateSyncBadge('empty'); // shows "connected, up to date"
+  } catch(e) {
+    console.warn('saveToGitHub failed:', e);
+  }
+}
+
+// ── Manual sync button ──
+function manualSync() {
+  const cfg = loadGHConfig();
+  if (!cfg || !cfg.owner || !cfg.repo || !cfg.token) { openGHConfig(); return; }
+  showToast('🔄 Sincronizando con GitHub…');
+  autoSyncFromGitHub();
+}
+
+// Legacy clearPendingJSON — kept for compatibility
+async function clearPendingJSON(cfg, sha) {
+  try {
+    await writeFileToGitHub(cfg, 'pending.json', '[]', sha, '🧹 Clear pending');
+  } catch(e) { console.warn('clearPendingJSON:', e); }
+}
+
 
 function updateSyncBadge(state, count, errMsg) {
   const badge = document.getElementById('sync-badge');
@@ -4180,6 +4302,9 @@ function setupAutoSave() {
     window[name] = function(...args) {
       const result = original.apply(this, args);
       saveAppState();
+      // Debounced GitHub sync — waits 2s after last change before uploading
+      clearTimeout(window._ghSaveTimer);
+      window._ghSaveTimer = setTimeout(saveToGitHub, 2000);
       return result;
     };
     window[name]._autosaveWrapped = true;
@@ -4284,9 +4409,12 @@ function init() {
   // Auto-sync from GitHub on startup
   setTimeout(() => {
     const cfg = loadGHConfig();
-    if (!cfg || !cfg.owner || !cfg.repo) updateSyncBadge('none');
-    else autoSyncFromGitHub();
-  }, 600);
+    if (!cfg || !cfg.owner || !cfg.repo || !cfg.token) {
+      updateSyncBadge('none');
+    } else {
+      autoSyncFromGitHub(); // pulls state.json + pending.json
+    }
+  }, 800);
   // init touch drag on customizer after it's opened
   const _cust = document.getElementById('modal-customizer');
   if (_cust) _cust.addEventListener('transitionend', initTouchDrag, { once: true });
