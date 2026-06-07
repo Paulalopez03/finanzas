@@ -1,8 +1,6 @@
 <!DOCTYPE html>
 <html lang="es" data-theme="dark">
 <head>
-  
-    
   <link rel="icon" href="icono.png">
 <link rel="apple-touch-icon" href="icono.png">
 <meta name="msapplication-TileImage" content="icono.png">
@@ -435,6 +433,10 @@
     .grid-4, .grid-3 { grid-template-columns: 1fr !important; }
     #main { padding: 64px 10px 80px !important; }
     .page-title { font-size: 20px !important; }
+    .regla-buckets-grid { grid-template-columns: 1fr !important; }
+  }
+  @media (max-width: 768px) {
+    .regla-buckets-grid { grid-template-columns: 1fr 1fr !important; }
   }
 </style>
 </head>
@@ -868,9 +870,10 @@
         <div class="page-subtitle">¿Tu dinero está bien repartido?</div>
       </div>
       <select id="regla-period" onchange="renderRegla()" style="width:auto">
-        <option value="1">Este mes</option>
-        <option value="3" selected>Últimos 3 meses</option>
-        <option value="6">Últimos 6 meses</option>
+        <option value="0">Mes actual (del 1 al hoy)</option>
+        <option value="1">Último mes completo</option>
+        <option value="3" selected>Media 3 meses</option>
+        <option value="6">Media 6 meses</option>
       </select>
     </div>
 
@@ -887,7 +890,7 @@
         </div>
       </div>
       <div id="regla-intro-box"></div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px" id="regla-buckets"></div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px" id="regla-buckets" class="regla-buckets-grid"></div>
     </div>
 
     <!-- CATEGORÍAS POR BUCKET -->
@@ -1274,8 +1277,7 @@ Reglas:
 // ═══════════════════════════════════════════════════════════════════
 
 // Raw CSV embedded (processed)
-const RAW_CSV = `Ropa,07/06/2026,-60
-BIZUM ENVIADO,07/06/2026,-13.50
+const RAW_CSV = `BIZUM ENVIADO,07/06/2026,-13.50
 BOUTIQUE DEL CAFE,06/06/2026,-13.25
 BIZUM ENVIADO,06/06/2026,-25.00
 Revolut**0017*,06/06/2026,-70.00
@@ -1922,6 +1924,7 @@ function showPanel(id) {
 
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   document.getElementById('panel-' + id).classList.add('active');
+  localStorage.setItem(LAST_PANEL_KEY, id); // remember for reload
   // Update active state in dynamic nav
   document.querySelectorAll('#sortable-nav .nav-item').forEach(el => {
     el.classList.toggle('active', el.dataset.panel === id);
@@ -3034,8 +3037,25 @@ function renderRegla() {
   const nomina = parseFloat(document.getElementById('regla-nomina-input').value) || 1452.66;
   document.getElementById('regla-nomina').textContent = fmt(nomina);
 
-  const txns = filterPeriod(transactions, months).filter(t => t.amount < 0 && t.category !== 'traspaso' && t.category !== 'ingreso');
-  const divisor = months;
+  // months=0 means current calendar month (1st to today)
+  let txnsFiltered;
+  if (months === 0) {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    txnsFiltered = transactions.filter(t =>
+      t.amount < 0 &&
+      t.category !== 'traspaso' &&
+      t.category !== 'ingreso' &&
+      t.date >= startOfMonth &&
+      t.date <= now
+    );
+  } else {
+    txnsFiltered = filterPeriod(transactions, months).filter(t => t.amount < 0 && t.category !== 'traspaso' && t.category !== 'ingreso');
+  }
+  const txns = txnsFiltered;
+  // months=0 → show actual totals this month (no average)
+  const divisor = months === 0 ? 1 : months;
+  const modeLabel = months === 0 ? 'este mes' : `media ${months} mes${months > 1 ? 'es' : ''}`;
 
   let totals = { necesidades: 0, deseos: 0 };
   txns.forEach(t => {
@@ -3046,15 +3066,37 @@ function renderRegla() {
 
   // Targets
   const targets = { necesidades: nomina * 0.5, deseos: nomina * 0.3, ahorro: nomina * 0.2 };
-  // Count the 200€ monthly transfer to savings as actual saving
-  const ahorroProgramado = 200;
-  const actualAhorro = Math.max(0, nomina - totals.necesidades - totals.deseos);
-  const actuals = { necesidades: totals.necesidades, deseos: totals.deseos, ahorro: Math.max(ahorroProgramado, actualAhorro) };
+
+  // Savings split: real money moved to savings vs money simply not spent yet.
+  const isSavingsTransferName = (name) => /ahorro|saving|cuenta\s*de\s*ahorro|cuenta\s*ahorro|trf\s*ahorro/i.test(name || '');
+  let txnsForSavings;
+  if (months === 0) {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    txnsForSavings = transactions.filter(t => t.date >= startOfMonth && t.date <= now);
+  } else {
+    txnsForSavings = filterPeriod(transactions, months);
+  }
+  const ahorroRealDetectado = txnsForSavings
+    .filter(t => t.amount < 0 && t.category === 'traspaso' && isSavingsTransferName(t.name))
+    .reduce((s,t) => s + Math.abs(t.amount), 0) / divisor;
+  const ahorroProgramado = fixedExpenses
+    .filter(f => f.catId === 'traspaso' && isSavingsTransferName(f.name))
+    .reduce((s,f) => s + Math.abs(f.amount || 0) / (f.freq || 1), 0);
+  const ahorroApartado = ahorroRealDetectado > 0 ? ahorroRealDetectado : ahorroProgramado;
+  const ahorroTotalNoConsumido = Math.max(0, nomina - totals.necesidades - totals.deseos);
+  const ahorroMargenDisponible = Math.max(0, ahorroTotalNoConsumido - ahorroApartado);
+  const ahorroEsReal = ahorroRealDetectado > 0;
+  const ahorroDetalleLabel = ahorroEsReal
+    ? 'Apartado real detectado'
+    : (ahorroProgramado > 0 ? 'Ahorro programado' : 'Apartado real detectado');
+
+  const actuals = { necesidades: totals.necesidades, deseos: totals.deseos, ahorro: ahorroTotalNoConsumido };
 
   const buckets = [
     { key: 'necesidades', label: 'Necesidades (50%)', pct: 50, color: 'var(--accent2)', emoji: '🏠', desc: 'Lo que necesitas para vivir: comida, transporte, facturas, médico.' },
     { key: 'deseos', label: 'Deseos (30%)', pct: 30, color: 'var(--accent)', emoji: '🛍️', desc: 'Lo que quieres pero no necesitas: ropa, restaurantes, ocio.' },
-    { key: 'ahorro', label: 'Ahorro (20%)', pct: 20, color: 'var(--green)', emoji: '💰', desc: 'Lo que guardas para el futuro. Incluye los 200€/mes que ya transfieres a ahorro.' },
+    { key: 'ahorro', label: 'Ahorro / margen (20%)', pct: 20, color: 'var(--green)', emoji: '💰', desc: 'Separa lo que has apartado de verdad y lo que simplemente no has gastado todavía.' },
   ];
 
   // Show 50/30/20 explanation box
@@ -3063,30 +3105,59 @@ function renderRegla() {
     <strong>⚖️ ¿Qué es esto?</strong> Es una guía para repartir tu sueldo de forma sana: 
     <strong style="color:var(--accent2)">50% a necesidades</strong> (comida, transporte, facturas), 
     <strong style="color:var(--accent)">30% a deseos</strong> (ropa, salir, ocio), 
-    <strong style="color:var(--green)">20% al ahorro</strong> (incluye tus 200€/mes de traspaso). 
-    No es una ley, es una brújula.
+    <strong style="color:var(--green)">20% al ahorro</strong>. En ahorro ahora verás dos lecturas: 
+    lo que has apartado de verdad y lo que aún no has gastado. No es una ley, es una brújula.
   </div>`;
 
   document.getElementById('regla-buckets').innerHTML = buckets.map(b => {
     const actual = actuals[b.key];
     const target = targets[b.key];
-    const fill = Math.min(1, actual / target);
-    const ok = actual <= target;
-    const statusColor = ok ? 'var(--green)' : 'var(--red)';
-    return `<div style="background:var(--surface2);border-radius:14px;padding:16px;border:1px solid ${ok ? 'rgba(91,191,142,.2)' : 'rgba(224,92,106,.2)'}">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <span style="font-size:20px">${b.emoji}</span>
-        <span class="badge" style="background:${statusColor}22;color:${statusColor}">${ok ? '✓ OK' : '✗ Exceso'}</span>
+    let fill = Math.min(1, actual / target);
+    let ok = actual <= target;
+    let statusColor = ok ? 'var(--green)' : 'var(--red)';
+    let statusLabel = ok ? '✓ Bien' : '↑ Te pasas';
+    let detailText = `${Math.round(fill*100)}% del objetivo · ${modeLabel}`;
+    if (b.key !== 'ahorro' && !ok) detailText += ` <span style="color:${statusColor}"> · te pasas ${fmt(actual-target)}</span>`;
+
+    if (b.key === 'ahorro') {
+      fill = Math.min(1, ahorroTotalNoConsumido / target);
+      const ahorroRealCumplido = ahorroApartado >= target;
+      const hayMargen = ahorroTotalNoConsumido >= target;
+      statusColor = ahorroRealCumplido ? 'var(--green)' : (hayMargen ? 'var(--yellow)' : 'var(--red)');
+      statusLabel = ahorroRealCumplido ? '✓ Real cumplido' : (hayMargen ? '• Margen disponible' : '⚠ Pendiente');
+      detailText = `${Math.round((ahorroTotalNoConsumido / target) * 100)}% del objetivo · ${modeLabel}`;
+    }
+
+    return `<div style="background:var(--surface2);border-radius:14px;padding:16px;border:1px solid ${statusColor === 'var(--green)' ? 'rgba(91,191,142,.2)' : statusColor === 'var(--yellow)' ? 'rgba(251,191,36,.28)' : 'rgba(224,92,106,.2)'}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:22px">${b.emoji}</span>
+          <div>
+            <div style="font-weight:700;font-size:13px">${b.label}</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:1px">${b.desc}</div>
+          </div>
+        </div>
+        <span class="badge" style="background:${statusColor}22;color:${statusColor};font-size:11px;padding:3px 8px;border-radius:99px;flex-shrink:0;margin-left:8px">${statusLabel}</span>
       </div>
-      <div style="font-weight:600;font-size:13px">${b.label}</div>
-      <div style="font-size:11px;color:var(--muted);margin-bottom:4px;line-height:1.4">${b.desc||''}</div>
-      <div style="font-size:10px;color:var(--muted);margin-bottom:10px">Meta: ${b.pct}% de tu nómina = ${fmt(target)}/mes</div>
-      <div style="font-family:var(--font-mono);font-size:20px;color:${statusColor};margin-bottom:8px">${fmt(actual)}</div>
-      <div class="progress-track">
-        <div class="progress-fill" style="width:${fill*100}%;background:${statusColor}"></div>
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
+        <div style="font-family:var(--font-mono);font-size:20px;color:${statusColor}">${fmt(actual)}</div>
+        <div style="font-size:12px;color:var(--muted)">objetivo: ${fmt(target)}</div>
       </div>
-      <div style="font-size:11px;color:var(--muted);margin-top:6px">${Math.round(fill*100)}% del presupuesto</div>
-      ${!ok ? `<div style="font-size:11px;color:var(--red);margin-top:4px">+${fmt(actual-target)} sobre el límite</div>` : ''}
+      <div class="progress-track" style="height:8px;background:var(--surface);border-radius:99px;overflow:hidden;margin-bottom:8px">
+        <div style="height:100%;width:${Math.min(100,fill*100)}%;background:${statusColor};border-radius:99px;transition:width .5s ease"></div>
+      </div>
+      <div style="font-size:11px;color:var(--muted)">${detailText}</div>
+      ${b.key === 'deseos' ? `<div style="margin-top:8px;font-size:11px;background:rgba(167,139,250,.08);border-radius:8px;padding:7px 10px;color:var(--muted);line-height:1.5">
+        💡 <strong>¿Qué es un deseo?</strong> Todo lo que podrías no comprar y seguir viviendo: ropa, salir a comer, ocio, caprichos. No es malo gastarlo — la idea es que no supere el 30%.
+      </div>` : ''}
+      ${b.key === 'ahorro' ? `<div style="margin-top:10px;display:grid;gap:7px;font-size:11px;color:var(--muted);line-height:1.45">
+        <div style="display:flex;justify-content:space-between;gap:10px;background:rgba(52,211,153,.08);border-radius:8px;padding:7px 10px"><span>🏦 <strong>${ahorroDetalleLabel}</strong></span><span style="font-family:var(--font-mono);color:var(--green)">${fmt(ahorroApartado)}</span></div>
+        <div style="display:flex;justify-content:space-between;gap:10px;background:rgba(167,139,250,.08);border-radius:8px;padding:7px 10px"><span>🌙 <strong>Margen no gastado</strong></span><span style="font-family:var(--font-mono)">${fmt(ahorroMargenDisponible)}</span></div>
+        <div style="display:flex;justify-content:space-between;gap:10px;background:rgba(96,165,250,.08);border-radius:8px;padding:7px 10px"><span>✨ <strong>Total no consumido</strong></span><span style="font-family:var(--font-mono)">${fmt(ahorroTotalNoConsumido)}</span></div>
+        <div style="background:rgba(251,191,36,.08);border-radius:8px;padding:7px 10px">
+          💡 Si aparece como <strong>programado</strong>, la app lo toma de tus gastos fijos. Si quieres que sea 100% real, añade o importa el movimiento del traspaso a ahorro con una descripción que contenga “ahorro”.
+        </div>
+      </div>` : ''}
     </div>`;
   }).join('');
 
@@ -4262,6 +4333,7 @@ function copyProjectPrompt() {
 
 const APP_STATE_KEY = 'paula_finance_app_state_v2';
 const DASH_PREF_KEY = 'paula_dashboard_period';
+const LAST_PANEL_KEY = 'paula_last_panel';
 const DASH_HIDDEN_KEY = 'paula_dashboard_hidden_fields';
 const DASH_FIELDS = [
   { id:'gastos', label:'Gastos período' },
@@ -4416,6 +4488,11 @@ function init() {
   loadAppState();
   setupAutoSave();
   buildNav();       // build dynamic sortable sidebar
+  // Restore last active panel
+  const _lastPanel = localStorage.getItem(LAST_PANEL_KEY);
+  if (_lastPanel && document.getElementById('panel-' + _lastPanel)) {
+    showPanel(_lastPanel);
+  }
   populateModalSelects();
   populateMonthFilter();
   loadDashPrefs();
