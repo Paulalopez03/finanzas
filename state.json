@@ -436,7 +436,7 @@
     }
   ],
   "uiPrefs": {
-    "lastPanel": "inversion",
+    "lastPanel": "ahorro",
     "dashPeriod": "month_start",
     "reglaPeriod": "0",
     "reglaNomina": "1452.66",
@@ -444,5 +444,5 @@
     "txnType": "",
     "txnCat": ""
   },
-  "lastUpdated": "2026-06-07T20:20:08.030Z"
+  "lastUpdated": "2026-06-07T20:20:40.106Z"
 }
