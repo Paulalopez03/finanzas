@@ -2230,6 +2230,25 @@ function adjustMainCuentaBalance(amount) {
   updateCurrentBalanceDisplay();
 }
 
+function getSavingsCuenta() {
+  if (!Array.isArray(cuentas) || !cuentas.length) return null;
+  return cuentas.find(c => !c.traspaso && c.tipo === 'ahorro') ||
+    cuentas.find(c => !c.traspaso && /ahorro|saving|remunerada/i.test(c.name || ''));
+}
+
+function adjustSavingsCuentaBalance(amount) {
+  const savings = getSavingsCuenta();
+  if (!savings || isNaN(amount)) return;
+  savings.saldo = Math.round(((parseFloat(savings.saldo) || 0) + amount) * 100) / 100;
+}
+
+function moveMoneyToSavings(amount) {
+  const value = Math.abs(parseFloat(amount) || 0);
+  if (!value) return;
+  adjustMainCuentaBalance(-value);
+  adjustSavingsCuentaBalance(value);
+}
+
 function dateLabel(d) {
   return d.toLocaleDateString('es-ES', { day:'2-digit', month:'short', year:'2-digit' });
 }
@@ -2604,7 +2623,14 @@ function deleteEditTxn() {
   if (!confirm('¿Eliminar este movimiento?')) return;
   const deletedTxn = transactions.find(t => t.id === editingIdx);
   transactions = transactions.filter(t => t.id !== editingIdx);
-  if (deletedTxn && deletedTxn.manual) adjustMainCuentaBalance(-deletedTxn.amount);
+  if (deletedTxn && deletedTxn.manual) {
+    if (deletedTxn.category === 'ahorro') {
+      adjustMainCuentaBalance(Math.abs(deletedTxn.amount));
+      adjustSavingsCuentaBalance(-Math.abs(deletedTxn.amount));
+    } else {
+      adjustMainCuentaBalance(-deletedTxn.amount);
+    }
+  }
   closeModal('modal-edit-txn');
   renderMovimientos();
   renderDashboard();
@@ -2616,12 +2642,16 @@ function addManualTxn() {
   const dateVal = document.getElementById('new-txn-date').value;
   const category = document.getElementById('new-txn-cat').value;
   if (!name || isNaN(amount) || !dateVal) return alert('Rellena todos los campos');
-  if (category === 'ahorro') amount = Math.abs(amount);
+  if (category === 'ahorro') amount = -Math.abs(amount);
   const date = new Date(dateVal);
   const id = Date.now();
   const txn = { id, name, date, amount, category, note:'', manual:true };
   transactions.unshift(txn);
-  adjustMainCuentaBalance(amount);
+  if (category === 'ahorro') {
+    moveMoneyToSavings(amount);
+  } else {
+    adjustMainCuentaBalance(amount);
+  }
   closeModal('modal-add-txn');
   renderMovimientos();
   renderDashboard();
@@ -3199,7 +3229,15 @@ function addCuenta() {
   if (!name) return;
   if (editingCuentaId) {
     const c = cuentas.find(x => x.id === editingCuentaId);
-    if (c) Object.assign(c, { name, saldo, tipo, rent, emoji, traspaso });
+    if (c) {
+      const oldSaldo = parseFloat(c.saldo) || 0;
+      const main = getMainCuenta();
+      const isSavingsLike = tipo === 'ahorro' || /ahorro|saving|remunerada/i.test(name || '');
+      const shouldMoveFromMain = main && c.id !== main.id && !traspaso && isSavingsLike;
+      const delta = Math.round((saldo - oldSaldo) * 100) / 100;
+      Object.assign(c, { name, saldo, tipo, rent, emoji, traspaso });
+      if (shouldMoveFromMain && delta !== 0) adjustMainCuentaBalance(-delta);
+    }
   } else {
     cuentas.push({ id: Date.now(), name, saldo, tipo, rent, emoji, traspaso });
   }
@@ -3219,6 +3257,7 @@ function renderPatrimonio() {
   const totalAll = cuentas.reduce((s, c) => s + c.saldo, 0);
 
   document.getElementById('pat-total').textContent = fmt(total);
+  updateCurrentBalanceDisplay();
   updateCurrentBalanceDisplay();
 
   // Emergency fund: based on avg monthly spending
