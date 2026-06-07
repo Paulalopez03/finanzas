@@ -1,12 +1,11 @@
 <!DOCTYPE html>
 <html lang="es" data-theme="dark">
 <head>
-
+  
     
   <link rel="icon" href="icono.png">
 <link rel="apple-touch-icon" href="icono.png">
 <meta name="msapplication-TileImage" content="icono.png">
-<meta charset="UTF-8">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#0d0c12">
@@ -444,8 +443,15 @@
 <!-- MOBILE TOP BAR -->
 <div id="mobile-topbar">
   <div class="topbar-logo">Paula·€</div>
-  <div style="display:flex;gap:10px;align-items:center">
-    <div class="topbar-balance" id="topbar-balance">11.303€</div>
+  <div style="display:flex;gap:8px;align-items:center">
+    <div style="display:flex;flex-direction:column;align-items:flex-end">
+      <div class="topbar-balance" id="topbar-balance">11.303€</div>
+      <div id="sync-badge-mobile" style="font-size:10px;color:var(--muted);line-height:1"></div>
+    </div>
+    <button onclick="manualSync()" title="Sincronizar" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;position:relative">
+      🔄<div id="sync-dot-mobile" style="position:absolute;top:4px;right:4px;width:7px;height:7px;border-radius:50%;background:var(--muted)"></div>
+    </button>
+    <button onclick="openGHConfig()" title="Conectar con Claude" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center">🔗</button>
     <button onclick="toggleTheme()" id="theme-btn-mobile" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center">🌙</button>
   </div>
 </div>
@@ -4096,23 +4102,30 @@ async function clearPendingJSON(cfg, sha) {
 
 
 function updateSyncBadge(state, count, errMsg) {
-  const badge = document.getElementById('sync-badge');
-  const dot   = document.getElementById('sync-dot');
-  if (!badge || !dot) return;
   const map = {
-    none:    { color: 'var(--muted)',  text: '— No conectado · pulsa 🔗' },
-    syncing: { color: 'var(--yellow)', text: '⏳ Comprobando…' },
-    ok:      { color: 'var(--green)',  text: `✅ ${count} movimiento${count>1?'s':''} importados` },
-    empty:   { color: 'var(--green)',  text: '✓ Conectado · todo al día' },
-    error:   { color: 'var(--red)',    text: '⚠️ ' + (errMsg || 'Error al conectar') },
+    none:    { color: 'var(--muted)',  text: '— No conectado · pulsa 🔗', short: '—' },
+    syncing: { color: 'var(--yellow)', text: '⏳ Comprobando…',            short: '⏳' },
+    ok:      { color: 'var(--green)',  text: `✅ ${count} movimiento${count>1?'s':''} importados`, short: `+${count}` },
+    empty:   { color: 'var(--green)',  text: '✓ Conectado · todo al día',  short: '✓' },
+    error:   { color: 'var(--red)',    text: '⚠️ ' + (errMsg || 'Error al conectar'), short: '⚠️' },
   };
   const s = map[state] || map.empty;
-  dot.style.background = s.color;
-  badge.textContent    = s.text;
-  badge.style.color    = s.color;
+
+  // Desktop sidebar
+  const badge = document.getElementById('sync-badge');
+  const dot   = document.getElementById('sync-dot');
+  if (badge) { badge.textContent = s.text; badge.style.color = s.color; }
+  if (dot)   dot.style.background = s.color;
+
+  // Mobile topbar
+  const badgeM = document.getElementById('sync-badge-mobile');
+  const dotM   = document.getElementById('sync-dot-mobile');
+  if (badgeM) { badgeM.textContent = s.short; badgeM.style.color = s.color; }
+  if (dotM)   dotM.style.background = s.color;
+
   if (state === 'ok') setTimeout(() => {
-    badge.textContent = '✓ Conectado · todo al día';
-    badge.style.color = 'var(--green)';
+    if (badge)  { badge.textContent = '✓ Conectado · todo al día'; badge.style.color = 'var(--green)'; }
+    if (badgeM) { badgeM.textContent = '✓'; badgeM.style.color = 'var(--green)'; }
   }, 6000);
 }
 
