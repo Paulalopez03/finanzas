@@ -3854,102 +3854,160 @@ function saveGHConfig(cfg) {
 // Called on app startup — tries to fetch pending.json from GitHub
 async function autoSyncFromGitHub() {
   const cfg = loadGHConfig();
-  if (!cfg || !cfg.owner || !cfg.repo) return; // not configured yet
+
+  // No config yet → show neutral "not connected" state
+  if (!cfg || !cfg.owner || !cfg.repo) {
+    updateSyncBadge('none');
+    return;
+  }
 
   updateSyncBadge('syncing');
   try {
-    // Use raw.githubusercontent.com (no auth needed for public repos)
-    // or GitHub API for private repos (needs token)
-    const url = cfg.token
+    // Always use the GitHub API (works for both public and private repos)
+    // For public repos without token we use raw.githubusercontent as fallback
+    const useAPI = !!cfg.token;
+    const url = useAPI
       ? `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/pending.json`
-      : `https://raw.githubusercontent.com/${cfg.owner}/${cfg.repo}/main/pending.json?t=${Date.now()}`;
+      : `https://raw.githubusercontent.com/${cfg.owner}/${cfg.repo}/main/pending.json?nocache=${Date.now()}`;
 
-    const headers = cfg.token
+    const headers = useAPI
       ? { 'Authorization': 'token ' + cfg.token, 'Accept': 'application/vnd.github.v3+json' }
       : {};
 
     const res = await fetch(url, { headers });
-    if (res.status === 404) { updateSyncBadge('empty'); return; } // no pending movements
-    if (!res.ok) throw new Error('HTTP ' + res.status);
 
-    let items;
-    if (cfg.token) {
-      const data = await res.json();
-      const decoded = atob(data.content.replace(/\n/g,''));
-      items = JSON.parse(decoded);
-      // Clear the file after reading
-      await clearPendingJSON(cfg, data.sha);
-    } else {
-      items = await res.json();
+    if (res.status === 404) {
+      updateSyncBadge('empty');
+      return;
+    }
+    if (res.status === 401 || res.status === 403) {
+      updateSyncBadge('error', 0, 'Token inválido o sin permisos');
+      return;
+    }
+    if (!res.ok) {
+      throw new Error('HTTP ' + res.status);
     }
 
-    if (!Array.isArray(items) || items.length === 0) { updateSyncBadge('empty'); return; }
+    let items;
+    let sha = null;
 
-    // Import the movements
+    if (useAPI) {
+      // GitHub API returns base64-encoded content
+      const data = await res.json();
+      sha = data.sha;
+      // GitHub wraps base64 in newlines every 60 chars — strip them all
+      const b64 = (data.content || '').replace(/\r|\n| /g, '');
+\s]/g, '');
+      if (!b64) { updateSyncBadge('empty'); return; }
+      let decoded;
+      try {
+        decoded = decodeURIComponent(escape(atob(b64)));
+      } catch(e) {
+        decoded = atob(b64); // fallback for pure ASCII
+      }
+      items = JSON.parse(decoded);
+    } else {
+      // raw.githubusercontent — direct JSON
+      const text = await res.text();
+      items = JSON.parse(text);
+    }
+
+    if (!Array.isArray(items) || items.length === 0) {
+      updateSyncBadge('empty');
+      return;
+    }
+
+    // Import movements
     let added = 0;
     items.forEach(t => {
       try {
-        const [y,m,d] = (t.date || new Date().toISOString().split('T')[0]).split('-');
+        const dateStr = t.date || new Date().toISOString().split('T')[0];
+        const [y, m, d] = dateStr.split('-');
+        const cat = t.category && categories.find(c => c.id === t.category)
+          ? t.category
+          : autoCategory(t.name || '', parseFloat(t.amount) || 0);
         transactions.unshift({
           id: Date.now() + added,
-          name: t.name || 'Sync Claude',
+          name: (t.name || 'Sync Claude').trim(),
           amount: parseFloat(t.amount) || 0,
-          date: new Date(parseInt(y), parseInt(m)-1, parseInt(d)),
-          category: t.category || autoCategory(t.name || '', parseFloat(t.amount) || 0),
-          note: t.note || '🤖 Sync automático desde Claude',
+          date: new Date(parseInt(y), parseInt(m) - 1, parseInt(d)),
+          category: cat,
+          note: t.note || '🤖 Añadido por Claude',
           impulsivo: false,
           manual: true
         });
         added++;
-      } catch(e) { console.warn('sync error:', e); }
+      } catch (e) {
+        console.warn('sync import error on item:', t, e);
+      }
     });
+
+    // Clear pending.json ONLY if we used the API (has write token)
+    if (useAPI && sha) {
+      await clearPendingJSON(cfg, sha);
+    }
 
     updateSyncBadge('ok', added);
     if (added > 0) {
       renderDashboard();
-      // Show toast
-      showToast(`✅ ${added} movimiento${added>1?'s':''} sincronizados desde Claude`);
+      populateMonthFilter();
+      showToast(`✅ ${added} movimiento${added > 1 ? 's' : ''} nuevos desde Claude`);
     }
-  } catch(e) {
+
+  } catch (e) {
     console.warn('GitHub sync failed:', e);
-    updateSyncBadge('error');
+    updateSyncBadge('error', 0, e.message);
   }
 }
 
 async function clearPendingJSON(cfg, sha) {
-  // Overwrites pending.json with empty array so it's not imported twice
+  // Overwrites pending.json with [] so movements aren't imported twice
   try {
-    await fetch(`https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/pending.json`, {
-      method: 'PUT',
-      headers: {
-        'Authorization': 'token ' + cfg.token,
-        'Content-Type': 'application/json',
-        'Accept': 'application/vnd.github.v3+json'
-      },
-      body: JSON.stringify({
-        message: 'Clear pending movements after import',
-        content: btoa('[]'),
-        sha: sha
-      })
-    });
-  } catch(e) { console.warn('Could not clear pending.json:', e); }
+    const res = await fetch(
+      `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/pending.json`,
+      {
+        method: 'PUT',
+        headers: {
+          'Authorization': 'token ' + cfg.token,
+          'Content-Type': 'application/json',
+          'Accept': 'application/vnd.github.v3+json'
+        },
+        body: JSON.stringify({
+          message: '🧹 Clear pending.json after import',
+          content: btoa('[]'),
+          sha: sha
+        })
+      }
+    );
+    if (!res.ok) console.warn('clearPendingJSON failed:', res.status);
+  } catch(e) {
+    console.warn('Could not clear pending.json:', e);
+  }
 }
 
-function updateSyncBadge(state, count) {
+function updateSyncBadge(state, count, errMsg) {
   const badge = document.getElementById('sync-badge');
   const dot   = document.getElementById('sync-dot');
   if (!badge || !dot) return;
-  const states = {
-    syncing: { color: 'var(--yellow)', text: '⏳ Sincronizando…' },
-    ok:      { color: 'var(--green)',  text: `✅ ${count} movimiento${count>1?'s':''} nuevos` },
-    empty:   { color: 'var(--muted)',  text: '✓ Sin movimientos nuevos' },
-    error:   { color: 'var(--red)',    text: '⚠️ Error al sincronizar' },
+  const map = {
+    none:    { color: '#555',              text: '— No conectado · pulsa 🔗' },
+    syncing: { color: 'var(--yellow)',     text: '⏳ Comprobando…' },
+    ok:      { color: 'var(--green)',      text: `✅ ${count} movimiento${count>1?'s':''} nuevos importados` },
+    empty:   { color: 'var(--green)',      text: '✓ Conectado · sin movimientos nuevos' },
+    error:   { color: 'var(--red)',        text: '⚠️ ' + (errMsg || 'Error al conectar con GitHub') },
   };
-  const s = states[state] || states.empty;
-  dot.style.background   = s.color;
-  badge.textContent = s.text;
-  badge.style.color = s.color;
-  if (state === 'ok') setTimeout(() => { badge.textContent = ''; dot.style.background = 'var(--green)'; }, 5000);
+  const s = map[state] || map.empty;
+  dot.style.background = s.color;
+  badge.textContent    = s.text;
+  badge.style.color    = s.color;
+  // After 6s, revert ok to "connected" state
+  if (state === 'ok') {
+    setTimeout(() => {
+      badge.textContent = '✓ Conectado';
+      badge.style.color = 'var(--green)';
+      dot.style.background = 'var(--green)';
+    }, 6000);
+  }
 }
 
 function showToast(msg) {
@@ -4000,7 +4058,11 @@ function saveGHConfigForm() {
 
 function manualSync() {
   const cfg = loadGHConfig();
-  if (!cfg) { openGHConfig(); return; }
+  if (!cfg || !cfg.owner || !cfg.repo) {
+    openGHConfig();
+    return;
+  }
+  showToast('🔄 Comprobando movimientos nuevos…');
   autoSyncFromGitHub();
 }
 
@@ -4239,7 +4301,15 @@ function init() {
   loadDashPrefs();
   renderDashboard();
   // Auto-sync from GitHub on startup
-  setTimeout(autoSyncFromGitHub, 800);
+  // Small delay so UI renders first
+  setTimeout(() => {
+    const cfg = loadGHConfig();
+    if (!cfg || !cfg.owner || !cfg.repo) {
+      updateSyncBadge('none'); // show "not connected" immediately
+    } else {
+      autoSyncFromGitHub();
+    }
+  }, 600);
   // init touch drag on customizer after it's opened
   document.getElementById('modal-customizer').addEventListener('transitionend', initTouchDrag, { once: true });
 
