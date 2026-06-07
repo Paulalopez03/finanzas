@@ -404,17 +404,6 @@
     }
   ],
   "retos": [],
-  "manualTxns": [
-    {
-      "id": 1780855327717,
-      "name": "Ropa",
-      "amount": -60,
-      "date": "2026-06-06T22:00:00.000Z",
-      "category": "ropa",
-      "note": "🤖 Añadido por Claude",
-      "impulsivo": false,
-      "manual": true
-    }
-  ],
-  "lastUpdated": "2026-06-07T18:02:09.824Z"
+  "manualTxns": [],
+  "lastUpdated": "2026-06-07T18:11:01.944Z"
 }
