@@ -393,7 +393,7 @@
     {
       "id": 1,
       "name": "imagin (cuenta principal)",
-      "saldo": 11303.05,
+      "saldo": 11403.05,
       "tipo": "corriente",
       "rent": 0,
       "emoji": "💜",
@@ -402,7 +402,7 @@
     {
       "id": 2,
       "name": "Cuenta de ahorro 2",
-      "saldo": 2460.9,
+      "saldo": 2360.9,
       "tipo": "ahorro",
       "rent": 1.25,
       "emoji": "🏦",
@@ -422,15 +422,6 @@
   "retos": [],
   "manualTxns": [
     {
-      "id": 1780861083862,
-      "name": "Ahorro",
-      "date": "2026-06-07T00:00:00.000Z",
-      "amount": 100,
-      "category": "ahorro",
-      "note": "",
-      "manual": true
-    },
-    {
       "id": 1780860731201,
       "name": "Ahorr9 ",
       "date": "2026-06-07T00:00:00.000Z",
@@ -440,5 +431,5 @@
       "manual": true
     }
   ],
-  "lastUpdated": "2026-06-07T19:38:06.143Z"
+  "lastUpdated": "2026-06-07T19:42:38.183Z"
 }
