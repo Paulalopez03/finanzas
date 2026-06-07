@@ -1,0 +1,4110 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0d0c12">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Paula €">
+<title>Paula · Finanzas</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  [data-theme="dark"] {
+    --bg: #0d0c12;
+    --surface: #15131c;
+    --surface2: #1e1c28;
+    --border: #2a2840;
+    --border2: #38355a;
+    --accent: #a78bfa;
+    --accent2: #7e6fc4;
+    --green: #34d399;
+    --red: #f87171;
+    --yellow: #fbbf24;
+    --blue: #60a5fa;
+    --text: #f0edf8;
+    --muted: #8a84a8;
+    --font-display: 'DM Serif Display', serif;
+    --font-mono: 'DM Mono', monospace;
+    --font-body: 'Outfit', sans-serif;
+  }
+  [data-theme="light"] {
+    --bg: #f3f2f8;
+    --surface: #ffffff;
+    --surface2: #eeedf5;
+    --border: #d8d4ec;
+    --border2: #c4bee0;
+    --accent: #7c3aed;
+    --accent2: #6d59c4;
+    --green: #059669;
+    --red: #dc2626;
+    --yellow: #d97706;
+    --blue: #2563eb;
+    --text: #1a1530;
+    --muted: #6b6488;
+    --font-display: 'DM Serif Display', serif;
+    --font-mono: 'DM Mono', monospace;
+    --font-body: 'Outfit', sans-serif;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    min-height: 100vh;
+    font-size: 14px;
+    transition: background .25s, color .25s;
+  }
+
+  /* ── LAYOUT ── */
+  #app { display: flex; min-height: 100vh; }
+
+  /* ── SIDEBAR ── */
+  #sidebar {
+    width: 220px;
+    min-height: 100vh;
+    background: var(--surface);
+    border-right: 1px solid var(--border); transition: background .25s;
+    display: flex;
+    flex-direction: column;
+    padding: 28px 0;
+    position: fixed;
+    top: 0; left: 0;
+    z-index: 100;
+  }
+  .logo {
+    font-family: var(--font-display);
+    font-size: 22px;
+    color: var(--accent);
+    padding: 0 24px 28px;
+    border-bottom: 1px solid var(--border);
+    letter-spacing: -.3px;
+  }
+  .logo span { color: var(--muted); font-size: 12px; display: block; font-family: var(--font-body); margin-top: 2px; font-weight:300; }
+  nav { padding: 20px 12px; flex: 1; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px; border-radius: 10px;
+    cursor: pointer; color: var(--muted); font-weight: 500;
+    font-size: 13px; transition: all .2s; margin-bottom: 2px;
+    letter-spacing: .2px;
+  }
+  .nav-item:hover { color: var(--text); background: var(--surface2); }
+  .nav-item.active { color: var(--accent); background: rgba(200,169,110,.1); }
+  .nav-icon { font-size: 16px; width: 20px; text-align: center; }
+  .sidebar-balance {
+    margin: 12px;
+    padding: 14px 16px;
+    background: linear-gradient(135deg, rgba(200,169,110,.15), rgba(126,111,196,.1));
+    border: 1px solid rgba(200,169,110,.25);
+    border-radius: 12px;
+  }
+  .sidebar-balance .label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+  .sidebar-balance .amount { font-family: var(--font-mono); font-size: 20px; color: var(--accent); margin-top: 4px; }
+
+  /* ── MAIN ── */
+  #main {
+    margin-left: 220px;
+    flex: 1;
+    padding: 32px;
+    max-width: calc(100vw - 220px);
+  }
+
+  /* ── PANELS ── */
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* ── PAGE HEADER ── */
+  .page-header {
+    display: flex; justify-content: space-between; align-items: flex-end;
+    margin-bottom: 32px;
+  }
+  .page-title { font-family: var(--font-display); font-size: 36px; color: var(--text); line-height: 1; }
+  .page-subtitle { color: var(--muted); font-size: 13px; margin-top: 6px; font-weight: 300; }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 22px 24px;
+  }
+  .card-title { font-size: 11px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--muted); margin-bottom: 12px; font-weight: 500; }
+
+  /* ── GRID ── */
+  .grid { display: grid; gap: 16px; }
+  .grid-4 { grid-template-columns: repeat(4, 1fr); }
+  .grid-3 { grid-template-columns: repeat(3, 1fr); }
+  .grid-2 { grid-template-columns: repeat(2, 1fr); }
+  .grid-1-2 { grid-template-columns: 1fr 2fr; }
+  .grid-2-1 { grid-template-columns: 2fr 1fr; }
+
+  /* ── STAT CARDS ── */
+  .stat { }
+  .stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+  .stat-value { font-family: var(--font-mono); font-size: 26px; font-weight: 500; line-height: 1; }
+  .stat-sub { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .stat-sub .up { color: var(--green); }
+  .stat-sub .down { color: var(--red); }
+
+  /* ── TRANSACTION LIST ── */
+  .txn-list { list-style: none; }
+  .txn-item {
+    display: flex; align-items: center; gap: 14px;
+    padding: 11px 0;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background .15s;
+    border-radius: 6px;
+  }
+  .txn-item:last-child { border-bottom: none; }
+  .txn-item:hover { background: rgba(255,255,255,.03); }
+  .txn-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; flex-shrink: 0;
+  }
+  .txn-info { flex: 1; min-width: 0; }
+  .txn-name { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .txn-date { font-size: 11px; color: var(--muted); margin-top: 1px; font-family: var(--font-mono); }
+  .txn-cat { font-size: 10px; padding: 2px 8px; border-radius: 99px; margin-left: 6px; font-weight: 500; }
+  .txn-amount {
+    font-family: var(--font-mono); font-size: 14px; font-weight: 500;
+    text-align: right; flex-shrink: 0;
+  }
+  .txn-amount.pos { color: var(--green); }
+  .txn-amount.neg { color: var(--text); }
+
+  /* ── BAR CHART ── */
+  .bar-chart { display: flex; align-items: flex-end; gap: 6px; height: 120px; }
+  .bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .bar {
+    width: 100%; border-radius: 6px 6px 0 0;
+    transition: all .3s; cursor: pointer; min-height: 4px;
+    position: relative;
+  }
+  .bar:hover { opacity: .8; }
+  .bar-label { font-size: 10px; color: var(--muted); font-family: var(--font-mono); }
+  .bar-val { font-size: 9px; color: var(--muted); }
+
+  /* ── PIE CHART SVG ── */
+  .donut-wrap { position: relative; display: flex; align-items: center; justify-content: center; }
+  .donut-center {
+    position: absolute;
+    text-align: center;
+    pointer-events: none;
+  }
+  .donut-center .big { font-family: var(--font-mono); font-size: 20px; color: var(--text); font-weight: 500; }
+  .donut-center .sm { font-size: 11px; color: var(--muted); }
+
+  /* ── LEGEND ── */
+  .legend { display: flex; flex-direction: column; gap: 10px; }
+  .legend-item { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .legend-name { font-size: 12px; flex: 1; }
+  .legend-amt { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+  .legend-pct { font-size: 10px; color: var(--muted); }
+
+  /* ── INPUTS & FORMS ── */
+  input, select, textarea {
+    background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text); border-radius: 10px;
+    padding: 10px 14px; font-family: var(--font-body); font-size: 13px;
+    width: 100%; outline: none; transition: border .2s;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--accent2); }
+  select option { background: var(--surface2); }
+  label { font-size: 11px; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); display: block; margin-bottom: 6px; }
+  .form-group { margin-bottom: 16px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  /* ── BUTTONS ── */
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 18px; border-radius: 10px; border: none;
+    cursor: pointer; font-family: var(--font-body); font-size: 13px;
+    font-weight: 500; transition: all .2s;
+  }
+  .btn-primary { background: var(--accent); color: #1a1610; }
+  .btn-primary:hover { background: #d4b87a; }
+  .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .btn-secondary:hover { border-color: var(--accent2); }
+  .btn-danger { background: rgba(224,92,106,.15); color: var(--red); border: 1px solid rgba(224,92,106,.3); }
+  .btn-danger:hover { background: rgba(224,92,106,.25); }
+  .btn-sm { padding: 6px 12px; font-size: 12px; }
+  .btn-icon { width: 34px; height: 34px; padding: 0; justify-content: center; border-radius: 8px; }
+
+  /* ── PROGRESS BAR ── */
+  .progress-track {
+    background: var(--surface2); border-radius: 99px; height: 8px; overflow: hidden;
+  }
+  .progress-fill { height: 100%; border-radius: 99px; transition: width .5s; }
+
+  /* ── BADGE ── */
+  .badge {
+    display: inline-block; padding: 3px 10px; border-radius: 99px;
+    font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px;
+  }
+
+  /* ── TABLE ── */
+  .tbl { width: 100%; border-collapse: collapse; }
+  .tbl th { font-size: 10px; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+  .tbl td { padding: 11px 12px; border-bottom: 1px solid rgba(46,43,56,.5); font-size: 13px; }
+  .tbl tr:hover td { background: rgba(255,255,255,.02); }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; z-index: 1000;
+    background: rgba(0,0,0,.7); backdrop-filter: blur(4px);
+    align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 20px; padding: 28px; width: 440px; max-width: 95vw;
+    max-height: 90vh; overflow-y: auto;
+  }
+  .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+  .modal-title { font-family: var(--font-display); font-size: 24px; }
+  .modal-close { background: var(--surface2); border: none; color: var(--muted); cursor: pointer; width: 32px; height: 32px; border-radius: 8px; font-size: 18px; display: flex; align-items: center; justify-content: center; }
+  .modal-close:hover { color: var(--text); }
+
+  /* ── FILTER BAR ── */
+  .filter-bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 20px; }
+  .filter-bar input, .filter-bar select { width: auto; }
+
+  /* ── CATEGORY CHIP ── */
+  .cat-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 12px; border-radius: 99px;
+    font-size: 11px; font-weight: 600;
+  }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+
+  /* ── ALERT ── */
+  .alert {
+    padding: 12px 16px; border-radius: 12px; font-size: 13px;
+    display: flex; align-items: center; gap: 10px; margin-bottom: 16px;
+  }
+  .alert-warn { background: rgba(232,193,106,.1); border: 1px solid rgba(232,193,106,.3); color: var(--yellow); }
+  .alert-ok { background: rgba(91,191,142,.1); border: 1px solid rgba(91,191,142,.3); color: var(--green); }
+  .alert-err { background: rgba(224,92,106,.1); border: 1px solid rgba(224,92,106,.3); color: var(--red); }
+
+  /* ── TABS ── */
+  .tabs { display: flex; gap: 4px; background: var(--surface2); border-radius: 12px; padding: 4px; margin-bottom: 24px; }
+  .tab { flex: 1; text-align: center; padding: 8px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 500; color: var(--muted); transition: all .2s; }
+  .tab.active { background: var(--surface); color: var(--text); }
+
+  /* ── PREDICTION ── */
+  .pred-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border); }
+  .pred-item:last-child { border-bottom: none; }
+
+  /* ── SAVINGS ── */
+  .saving-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    transition: border-color .2s;
+  }
+  .saving-card:hover { border-color: var(--accent2); }
+
+
+  /* ── MOBILE OVERLAY DRAWER (always in DOM, hidden by default) ── */
+  #mobile-menu-overlay {
+    display: none; position: fixed; inset: 0; z-index: 500;
+  }
+  #mobile-drawer {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: var(--surface); border-top: 1px solid var(--border);
+    border-radius: 24px 24px 0 0;
+    padding: 12px 16px 40px;
+    z-index: 501;
+    transform: translateY(100%);
+    transition: transform .3s cubic-bezier(.4,0,.2,1);
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+  #mobile-drawer.open { transform: translateY(0); }
+  .mobile-drawer-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.65);
+    backdrop-filter: blur(4px);
+  }
+
+  /* Bottom nav — hidden on desktop */
+  #bottom-nav {
+    display: none;
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    z-index: 100;
+    padding: 6px 0 12px;
+  }
+  .bottom-nav-items {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+  }
+  .bnav-item {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 3px; padding: 6px 10px; border-radius: 12px;
+    cursor: pointer; color: var(--muted); font-size: 10px;
+    font-weight: 500; transition: all .2s; flex: 1; min-width: 0;
+  }
+  .bnav-item.active { color: var(--accent); }
+  .bnav-item .bnav-icon { font-size: 20px; line-height: 1; }
+  .bnav-more {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 3px; padding: 6px 10px; border-radius: 12px;
+    cursor: pointer; color: var(--muted); font-size: 10px;
+    font-weight: 500; flex: 1;
+  }
+  .bnav-more .bnav-icon { font-size: 20px; line-height: 1; }
+
+  /* Mobile drawer nav grid */
+  .drawer-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 10px; margin-top: 8px;
+  }
+  .drawer-item {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 6px; padding: 14px 8px; border-radius: 14px;
+    background: var(--surface2); cursor: pointer;
+    font-size: 11px; color: var(--muted); font-weight: 500;
+    text-align: center; transition: all .2s; border: 1px solid transparent;
+  }
+  .drawer-item:active { color: var(--accent); border-color: rgba(200,169,110,.3); background: rgba(200,169,110,.08); }
+  .drawer-item .di-icon { font-size: 26px; }
+
+  /* Mobile top bar */
+  #mobile-topbar {
+    display: none;
+    position: fixed; top: 0; left: 0; right: 0;
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 14px 16px; z-index: 99;
+    align-items: center; justify-content: space-between;
+  }
+  .topbar-logo { font-family: var(--font-display); font-size: 18px; color: var(--accent); }
+  .topbar-balance { font-family: var(--font-mono); font-size: 14px; color: var(--accent); }
+
+  /* ── RESPONSIVE MOBILE ── */
+  @media (max-width: 768px) {
+    #app { display: block !important; }
+    #sidebar { display: none !important; }
+    #mobile-topbar { display: flex !important; }
+    #bottom-nav { display: block !important; }
+    #main {
+      margin-left: 0 !important;
+      max-width: 100vw !important;
+      width: 100%;
+      padding: 68px 12px 84px !important;
+      overflow-x: hidden;
+    }
+    /* Grid: 4-col → 2-col, resto → 1-col */
+    .grid-4 { grid-template-columns: 1fr 1fr !important; }
+    .grid-3 { grid-template-columns: 1fr 1fr !important; }
+    .grid-2, .grid-1-2, .grid-2-1 { grid-template-columns: 1fr !important; }
+    /* Tables: scroll horizontal */
+    .card { overflow-x: auto; }
+    table { min-width: 480px; }
+    /* Typography scale down */
+    .page-title { font-size: 22px !important; }
+    .stat-value { font-size: 18px !important; }
+    .panel-header { flex-direction: column; align-items: flex-start !important; gap: 10px; }
+    .filter-bar { flex-wrap: wrap; gap: 8px; }
+    .filter-bar input, .filter-bar select { width: 100% !important; max-width: 100%; }
+    /* Modals full-width on mobile */
+    .modal { width: 95vw !important; max-width: 95vw !important; border-radius: 16px !important; padding: 20px 16px !important; }
+    /* Cards */
+    .saving-card { min-width: 0; }
+    /* Donut charts */
+    .donut-wrap { flex-direction: column; }
+    /* Regla buckets: 1 column on very small screens */
+  }
+  @media (max-width: 480px) {
+    .grid-4, .grid-3 { grid-template-columns: 1fr !important; }
+    #main { padding: 64px 10px 80px !important; }
+    .page-title { font-size: 20px !important; }
+  }
+</style>
+</head>
+<body>
+
+<!-- MOBILE TOP BAR -->
+<div id="mobile-topbar">
+  <div class="topbar-logo">Paula·€</div>
+  <div style="display:flex;gap:10px;align-items:center">
+    <div class="topbar-balance" id="topbar-balance">11.303€</div>
+    <button onclick="toggleTheme()" id="theme-btn-mobile" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center">🌙</button>
+  </div>
+</div>
+
+<!-- MOBILE BOTTOM NAV -->
+<nav id="bottom-nav">
+  <div class="bottom-nav-items">
+    <div class="bnav-item active" id="bnav-dashboard" onclick="showPanel('dashboard');setActivebnav('dashboard')">
+      <span class="bnav-icon">🏠</span>Inicio
+    </div>
+    <div class="bnav-item" id="bnav-movimientos" onclick="showPanel('movimientos');setActivebnav('movimientos')">
+      <span class="bnav-icon">↕️</span>Movimientos
+    </div>
+    <div class="bnav-item" id="bnav-regla" onclick="showPanel('regla');setActivebnav('regla')">
+      <span class="bnav-icon">⚖️</span>50/30/20
+    </div>
+    <div class="bnav-item" id="bnav-retos" onclick="showPanel('retos');setActivebnav('retos')">
+      <span class="bnav-icon">🔥</span>Retos
+    </div>
+    <div class="bnav-more" onclick="openDrawer()">
+      <span class="bnav-icon">⋯</span>Más
+    </div>
+  </div>
+</nav>
+
+<!-- MOBILE DRAWER (full menu) -->
+<div id="mobile-menu-overlay">
+  <div class="mobile-drawer-backdrop" onclick="closeDrawer()"></div>
+  <div id="mobile-drawer">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div style="font-family:var(--font-display);font-size:20px;color:var(--accent)">Todo</div>
+      <button style="background:var(--surface2);border:none;color:var(--muted);width:32px;height:32px;border-radius:8px;font-size:18px;cursor:pointer" onclick="closeDrawer()">×</button>
+    </div>
+    <div class="drawer-grid" id="mobile-drawer-grid">
+      <!-- Built dynamically by buildMobileDrawer() -->
+    </div>
+  </div>
+</div>
+
+<div id="app">
+
+<!-- SIDEBAR -->
+<aside id="sidebar">
+  <div class="logo">Paula<i>·</i>€<span>Gestor financiero</span></div>
+  <nav>
+    <div class="nav-item active" onclick="showPanel('dashboard')"><span class="nav-icon">🏠</span>Dashboard</div>
+    <div class="nav-item" onclick="showPanel('movimientos')"><span class="nav-icon">↕️</span>Movimientos</div>
+    <div class="nav-item" onclick="showPanel('categorias')"><span class="nav-icon">🏷️</span>Categorías</div>
+    <div class="nav-item" onclick="showPanel('fijos')"><span class="nav-icon">📌</span>Gastos fijos</div>
+    <div class="nav-item" onclick="showPanel('limites')"><span class="nav-icon">⚠️</span>Límites</div>
+    <div class="nav-item" onclick="showPanel('ahorro')"><span class="nav-icon">🏦</span>Ahorro</div>
+    <div class="nav-item" onclick="showPanel('prediccion')"><span class="nav-icon">🔮</span>Predicción</div>
+    <div class="nav-item" onclick="showPanel('analisis')"><span class="nav-icon">📊</span>Análisis</div>
+    <div class="nav-item" onclick="showPanel('patrimonio')"><span class="nav-icon">🏛️</span>Patrimonio</div>
+    <div class="nav-item" onclick="showPanel('regla')"><span class="nav-icon">⚖️</span>Regla 50/30/20</div>
+    <div class="nav-item" onclick="showPanel('retos')"><span class="nav-icon">🔥</span>Retos</div>
+    <div class="nav-item" onclick="showPanel('inversion')"><span class="nav-icon">📈</span>Inversión</div>
+  </nav>
+  <div class="sidebar-balance">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
+      <div class="label">Saldo actual</div>
+      <button onclick="manualSync()" title="Sincronizar con Claude" style="background:none;border:none;cursor:pointer;padding:2px;display:flex;align-items:center;gap:4px">
+        <div id="sync-dot" style="width:8px;height:8px;border-radius:50%;background:var(--muted);transition:background .3s"></div>
+      </button>
+    </div>
+    <div class="amount" id="sb-balance">11.303€</div>
+    <div id="sync-badge" style="font-size:11px;color:var(--muted);margin-top:4px;min-height:14px;transition:color .3s"></div>
+  </div>
+  <div style="padding:12px">
+    <div onclick="toggleTheme()" style="display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;cursor:pointer;">
+      <span style="font-size:12px;color:var(--muted)" id="theme-label">🌙 Modo oscuro</span>
+      <div id="theme-track" style="width:36px;height:20px;background:var(--accent2);border-radius:99px;position:relative;transition:background .2s">
+        <div id="theme-thumb" style="width:16px;height:16px;background:white;border-radius:50%;position:absolute;top:2px;left:2px;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.3)"></div>
+      </div>
+    </div>
+  </div>
+  <div style="padding:8px 12px 4px;display:flex;flex-direction:column;gap:6px">
+    <button onclick="openPanelCustomizer()" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--muted);border-radius:10px;padding:9px 14px;cursor:pointer;font-size:12px;font-weight:600;display:flex;align-items:center;gap:8px;transition:all .2s" onmouseenter="this.style.color='var(--text)'" onmouseleave="this.style.color='var(--muted)'">
+      <span>⚙️</span> Personalizar menú
+    </button>
+    <button onclick="openGHConfig()" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--muted);border-radius:10px;padding:9px 14px;cursor:pointer;font-size:12px;font-weight:600;display:flex;align-items:center;gap:8px;transition:all .2s" onmouseenter="this.style.color='var(--text)'" onmouseleave="this.style.color='var(--muted)'">
+      <span>🔗</span> Conectar con Claude
+    </button>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main id="main">
+
+  <!-- ═══════════════════════════════════════════════════════ DASHBOARD -->
+  <div id="panel-dashboard" class="panel active">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Hola, Paula 👋</div>
+        <div class="page-subtitle" id="dash-subtitle">Cargando datos…</div>
+      </div>
+      <div style="display:flex;gap:10px">
+        <select id="dash-period" onchange="renderDashboard()" style="width:auto">
+          <option value="1">Este mes</option>
+          <option value="3">Últimos 3 meses</option>
+          <option value="6">Últimos 6 meses</option>
+          <option value="12" selected>Último año</option>
+          <option value="0">Todo</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- STAT CARDS -->
+    <div class="grid grid-4" style="margin-bottom:20px">
+      <div class="card stat">
+        <div class="stat-label">Gastos período</div>
+        <div class="stat-value" id="d-gastos" style="color:var(--red)">—</div>
+        <div class="stat-sub" id="d-gastos-sub">—</div>
+      </div>
+      <div class="card stat">
+        <div class="stat-label">Ingresos período</div>
+        <div class="stat-value" id="d-ingresos" style="color:var(--green)">—</div>
+        <div class="stat-sub" id="d-ingresos-sub">—</div>
+      </div>
+      <div class="card stat">
+        <div class="stat-label">Balance neto</div>
+        <div class="stat-value" id="d-balance">—</div>
+        <div class="stat-sub" id="d-balance-sub">—</div>
+      </div>
+      <div class="card stat">
+        <div class="stat-label">Gasto diario medio</div>
+        <div class="stat-value" id="d-daily">—</div>
+        <div class="stat-sub" id="d-daily-sub">—</div>
+      </div>
+    </div>
+
+    <!-- ALERTS -->
+    <div id="dash-alerts"></div>
+
+    <!-- CHARTS ROW -->
+    <div class="grid grid-2" style="margin-bottom:20px">
+      <div class="card">
+        <div class="card-title">Gastos por mes</div>
+        <div id="bar-chart-area"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Distribución por categoría</div>
+        <div style="display:flex;align-items:center;gap:20px">
+          <div class="donut-wrap">
+            <svg id="donut-svg" width="140" height="140" viewBox="0 0 140 140"></svg>
+            <div class="donut-center">
+              <div class="big" id="donut-total">—</div>
+              <div class="sm">total</div>
+            </div>
+          </div>
+          <div class="legend" id="donut-legend"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RECENT TRANSACTIONS -->
+    <div class="card">
+      <div class="card-title" style="display:flex;justify-content:space-between">
+        <span>Últimos movimientos</span>
+        <span style="cursor:pointer;color:var(--accent2);font-size:12px" onclick="showPanel('movimientos')">Ver todos →</span>
+      </div>
+      <div id="recent-list" style="display:flex;flex-direction:column;gap:0"></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ MOVIMIENTOS -->
+  <div id="panel-movimientos" class="panel">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Movimientos</div>
+        <div class="page-subtitle">Todos tus movimientos importados</div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-secondary btn-sm" onclick="openModal('modal-claude-import')" title="Importar desde Claude">🤖 Importar desde Claude</button>
+        <button class="btn btn-primary" onclick="openModal('modal-add-txn')">+ Añadir manual</button>
+      </div>
+    </div>
+
+    <div class="filter-bar">
+      <input type="text" id="txn-search" placeholder="🔍 Buscar…" style="width:200px" oninput="renderMovimientos()">
+      <select id="txn-cat-filter" onchange="renderMovimientos()">
+        <option value="">Todas las categorías</option>
+      </select>
+      <select id="txn-type-filter" onchange="renderMovimientos()">
+        <option value="">Todo</option>
+        <option value="gasto">Solo gastos</option>
+        <option value="ingreso">Solo ingresos</option>
+        <option value="sin_cat">⚠️ Sin clasificar</option>
+      </select>
+      <select id="txn-month-filter" onchange="renderMovimientos()">
+        <option value="">Todos los meses</option>
+      </select>
+      <button class="btn btn-secondary btn-sm" onclick="exportCSV()">⬇ Exportar</button>
+    </div>
+
+    <div class="card" style="padding:0;overflow:hidden">
+      <table class="tbl" id="txn-table">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Concepto</th>
+            <th>Categoría</th>
+            <th style="text-align:right">Importe</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="txn-tbody"></tbody>
+      </table>
+    </div>
+    <div id="txn-pagination" style="display:flex;gap:8px;justify-content:center;margin-top:16px"></div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ CATEGORÍAS -->
+  <div id="panel-categorias" class="panel">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Categorías</div>
+        <div class="page-subtitle">Gestiona y edita tus categorías de gasto</div>
+      </div>
+      <button class="btn btn-primary" onclick="openModal('modal-add-cat')">+ Nueva categoría</button>
+    </div>
+
+    <div class="grid grid-3" id="cat-cards-area"></div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ FIJOS -->
+  <div id="panel-fijos" class="panel">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Gastos Fijos</div>
+        <div class="page-subtitle">Suscripciones y pagos recurrentes</div>
+      </div>
+      <button class="btn btn-primary" onclick="openModal('modal-add-fijo')">+ Añadir fijo</button>
+    </div>
+
+    <div id="fijos-alerts" style="margin-bottom:16px"></div>
+
+    <div class="grid grid-3" id="fijos-cards-area"></div>
+
+    <div class="card" style="margin-top:20px">
+      <div class="card-title">Total mensual en fijos</div>
+      <div style="display:flex;align-items:center;gap:24px;margin-top:8px">
+        <div style="font-family:var(--font-mono);font-size:32px;color:var(--red)" id="fijos-total">—</div>
+        <div style="color:var(--muted);font-size:13px">/ mes estimado</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ LÍMITES -->
+  <div id="panel-limites" class="panel">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Límites de Gasto</div>
+        <div class="page-subtitle">Define topes por categoría y recibe alertas</div>
+      </div>
+      <button class="btn btn-primary" onclick="openModal('modal-add-limite')">+ Añadir límite</button>
+    </div>
+
+    <div id="limites-area"></div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ AHORRO -->
+  <div id="panel-ahorro" class="panel">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Metas de Ahorro</div>
+        <div class="page-subtitle">Sigue el progreso de tus objetivos</div>
+      </div>
+      <button class="btn btn-primary" onclick="openModal('modal-add-meta')">+ Nueva meta</button>
+    </div>
+
+    <div class="grid grid-3" id="ahorro-cards"></div>
+
+    <div class="card" style="margin-top:20px">
+      <div class="card-title">💡 Potencial de ahorro mensual</div>
+      <div id="saving-tips"></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ PREDICCIÓN -->
+  <div id="panel-prediccion" class="panel">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Predicción</div>
+        <div class="page-subtitle">Proyección basada en tus patrones de gasto</div>
+      </div>
+    </div>
+    <div class="grid grid-2">
+      <div class="card">
+        <div class="card-title">Próximos 30 días estimados</div>
+        <div id="pred-30-list"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Proyección anual</div>
+        <div id="pred-anual"></div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:20px">
+      <div class="card-title">Simulador: ¿Qué pasa si…?</div>
+      <div class="form-row" style="margin-bottom:16px">
+        <div class="form-group">
+          <label>Reduzco gasto en</label>
+          <select id="sim-cat" style="width:100%"></select>
+        </div>
+        <div class="form-group">
+          <label>Un % de</label>
+          <input type="number" id="sim-pct" value="20" min="0" max="100">
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="runSimulator()">Simular ahorro</button>
+      <div id="sim-result" style="margin-top:16px"></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ ANÁLISIS -->
+  <div id="panel-analisis" class="panel">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Análisis Avanzado</div>
+        <div class="page-subtitle">Patrones, tendencias y comparativas</div>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <div class="tab active" onclick="switchAnalTab(this,'an-tendencia')">Tendencia mensual</div>
+      <div class="tab" onclick="switchAnalTab(this,'an-dias')">Por día de la semana</div>
+      <div class="tab" onclick="switchAnalTab(this,'an-top')">Top gastos</div>
+      <div class="tab" onclick="switchAnalTab(this,'an-comparativa')">Comparativa mensual</div>
+    </div>
+
+    <div id="an-tendencia" class="an-tab">
+      <div class="card"><div class="card-title">Evolución del saldo disponible</div><div id="saldo-chart"></div></div>
+    </div>
+    <div id="an-dias" class="an-tab" style="display:none">
+      <div class="card"><div class="card-title">Gasto medio por día de la semana</div><div id="dias-chart"></div></div>
+    </div>
+    <div id="an-top" class="an-tab" style="display:none">
+      <div class="card">
+        <div class="card-title">Top 20 comercios por gasto</div>
+        <table class="tbl" id="top-table">
+          <thead><tr><th>#</th><th>Comercio</th><th>Visitas</th><th style="text-align:right">Total gastado</th><th style="text-align:right">Media/visita</th></tr></thead>
+          <tbody id="top-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div id="an-comparativa" class="an-tab" style="display:none">
+      <div class="card"><div class="card-title">Comparativa mes a mes (gastos)</div><div id="comp-chart"></div></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ PATRIMONIO -->
+  <div id="panel-patrimonio" class="panel">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Patrimonio</div>
+        <div class="page-subtitle">Visión completa de tu dinero real</div>
+      </div>
+      <button class="btn btn-primary" onclick="openModal('modal-add-cuenta')">+ Añadir cuenta</button>
+    </div>
+
+    <!-- TOTAL PATRIMONIO -->
+    <div class="card" style="margin-bottom:20px;background:linear-gradient(135deg,rgba(200,169,110,.12),rgba(126,111,196,.08));border-color:rgba(200,169,110,.3)">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div class="stat-label">Patrimonio total</div>
+          <div style="font-family:var(--font-mono);font-size:42px;color:var(--accent);margin-top:6px" id="pat-total">—</div>
+          <div style="font-size:13px;color:var(--muted);margin-top:6px" id="pat-subtitle">—</div>
+        </div>
+        <div style="text-align:right">
+          <div class="stat-label">Fondo de emergencia</div>
+          <div style="font-family:var(--font-mono);font-size:22px;margin-top:6px" id="pat-emergency-val">—</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:4px" id="pat-emergency-label">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CUENTAS -->
+    <div class="grid grid-3" id="pat-cuentas" style="margin-bottom:20px"></div>
+
+    <!-- DISTRIBUCIÓN + GASTOS REALES -->
+    <div class="grid grid-2" style="margin-bottom:20px">
+      <div class="card">
+        <div class="card-title">Distribución del patrimonio</div>
+        <div id="pat-donut-wrap" style="display:flex;align-items:center;gap:20px">
+          <div class="donut-wrap">
+            <svg id="pat-donut" width="120" height="120" viewBox="0 0 120 120"></svg>
+            <div class="donut-center">
+              <div class="big" id="pat-donut-total" style="font-size:16px">—</div>
+              <div class="sm">total</div>
+            </div>
+          </div>
+          <div class="legend" id="pat-donut-legend"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Traspasos vs gastos reales (este mes)</div>
+        <div id="pat-traspaso-analysis"></div>
+      </div>
+    </div>
+
+    <!-- RENTABILIDAD AHORRO -->
+    <div class="card">
+      <div class="card-title">💡 Análisis de rentabilidad</div>
+      <div id="pat-rentabilidad"></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ REGLA 50/30/20 -->
+  <div id="panel-regla" class="panel">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Regla 50/30/20</div>
+        <div class="page-subtitle">¿Tu dinero está bien repartido?</div>
+      </div>
+      <select id="regla-period" onchange="renderRegla()" style="width:auto">
+        <option value="1">Este mes</option>
+        <option value="3" selected>Últimos 3 meses</option>
+        <option value="6">Últimos 6 meses</option>
+      </select>
+    </div>
+
+    <!-- NÓMINA + REGLA VISUAL -->
+    <div class="card" style="margin-bottom:20px;background:linear-gradient(135deg,rgba(200,169,110,.1),rgba(126,111,196,.06));border-color:rgba(200,169,110,.25)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+        <div>
+          <div class="stat-label">Nómina base</div>
+          <div style="font-family:var(--font-mono);font-size:32px;color:var(--accent)" id="regla-nomina">1.452,66€</div>
+        </div>
+        <div style="text-align:right">
+          <label style="display:block;margin-bottom:6px">Ajusta tu nómina</label>
+          <input type="number" id="regla-nomina-input" value="1452.66" step="1" style="width:160px;text-align:right" oninput="renderRegla()">
+        </div>
+      </div>
+      <div id="regla-intro-box"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px" id="regla-buckets"></div>
+    </div>
+
+    <!-- CATEGORÍAS POR BUCKET -->
+    <div class="grid grid-3" id="regla-cats-area"></div>
+
+    <!-- ALERTAS SEMANALES -->
+    <div class="card" style="margin-top:20px">
+      <div class="card-title">⏰ Alertas de gasto semanal</div>
+      <div id="regla-semanal"></div>
+    </div>
+
+    <!-- ETIQUETA IMPULSIVO -->
+    <div class="card" style="margin-top:20px">
+      <div class="card-title">⚡ Compras impulsivas este mes</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <div style="font-size:13px;color:var(--muted)">Marca movimientos como impulsivos desde la vista de Movimientos</div>
+        <div style="font-family:var(--font-mono);font-size:22px;color:var(--red)" id="impulsivo-total">—</div>
+      </div>
+      <div id="impulsivo-list"></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ RETOS -->
+  <div id="panel-retos" class="panel">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Retos de Ahorro</div>
+        <div class="page-subtitle">Días sin gastar · rachas · desafíos</div>
+      </div>
+    </div>
+
+    <!-- RACHA ACTUAL -->
+    <div class="card" style="margin-bottom:20px;text-align:center;padding:32px;background:linear-gradient(135deg,rgba(91,191,142,.1),rgba(126,111,196,.08));border-color:rgba(91,191,142,.25)">
+      <div style="font-size:64px;margin-bottom:8px" id="racha-emoji">🔥</div>
+      <div style="font-family:var(--font-display);font-size:48px;color:var(--green)" id="racha-dias">0</div>
+      <div style="color:var(--muted);font-size:14px;margin-top:6px">días seguidos sin gasto discrecional</div>
+      <div style="margin-top:16px;font-size:13px;color:var(--muted)" id="racha-ultimo"></div>
+    </div>
+
+    <div class="grid grid-3" style="margin-bottom:20px">
+      <div class="card" style="text-align:center">
+        <div class="stat-label">Mejor racha</div>
+        <div style="font-family:var(--font-mono);font-size:32px;color:var(--accent)" id="mejor-racha">—</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px">días consecutivos</div>
+      </div>
+      <div class="card" style="text-align:center">
+        <div class="stat-label">Días sin gasto (este mes)</div>
+        <div style="font-family:var(--font-mono);font-size:32px;color:var(--accent2)" id="dias-sin-gasto">—</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px">de <span id="dias-mes-total">—</span> días</div>
+      </div>
+      <div class="card" style="text-align:center">
+        <div class="stat-label">Ahorro por días sin gasto</div>
+        <div style="font-family:var(--font-mono);font-size:32px;color:var(--green)" id="ahorro-reto">—</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px">estimado este mes</div>
+      </div>
+    </div>
+
+    <!-- CALENDARIO DE DÍAS -->
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-title">Calendario del mes actual</div>
+      <div id="reto-calendario" style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:8px"></div>
+      <div style="display:flex;gap:16px;margin-top:12px;font-size:12px;color:var(--muted)">
+        <span>🟢 Sin gasto</span><span>🔴 Con gasto</span><span>⚪ Sin datos</span>
+      </div>
+    </div>
+
+    <!-- BREAKDOWN DIAS ROJOS -->
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-title">🔍 ¿Por qué no cumplí el reto? — lo que gasté cada día rojo este mes</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.6">
+        Los <span style="color:var(--red);font-weight:600">días rojos</span> son aquellos en que gastaste en categorías discrecionales 
+        (restaurantes, ropa, ocio). Aquí ves exactamente qué compraste para que puedas entender el patrón.
+      </div>
+      <div id="reto-breakdown"></div>
+    </div>
+    <!-- RETOS ACTIVOS -->
+    <div class="card">
+      <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
+        <span>Retos personalizados</span>
+        <button class="btn btn-primary btn-sm" onclick="openModal('modal-add-reto')">+ Nuevo reto</button>
+      </div>
+      <div id="retos-list" style="margin-top:12px"></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ INVERSIÓN -->
+  <div id="panel-inversion" class="panel">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Simulador de Inversión</div>
+        <div class="page-subtitle">¿Qué pasa si empiezas a invertir hoy?</div>
+      </div>
+    </div>
+
+    <!-- SIMULADOR PRINCIPAL -->
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-title">⚙️ Parámetros</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px">
+        <div class="form-group">
+          <label>Capital inicial (€)</label>
+          <input type="number" id="inv-capital" value="3000" step="100" oninput="renderInversion()">
+        </div>
+        <div class="form-group">
+          <label>Aportación mensual (€)</label>
+          <input type="number" id="inv-mensual" value="200" step="10" oninput="renderInversion()">
+        </div>
+        <div class="form-group">
+          <label>Rentabilidad anual (%)</label>
+          <input type="number" id="inv-rent" value="7" step="0.1" oninput="renderInversion()">
+        </div>
+        <div class="form-group">
+          <label>Años</label>
+          <input type="number" id="inv-years" value="10" min="1" max="40" oninput="renderInversion()">
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px" id="inv-stats"></div>
+    </div>
+
+    <!-- GRÁFICO EVOLUCIÓN -->
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-title">Evolución del capital</div>
+      <div id="inv-chart"></div>
+    </div>
+
+    <!-- ESTACIONALIDAD -->
+    <div class="card">
+      <div class="card-title">📅 Estacionalidad — Meses que más gastas</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:16px">Basado en tu historial real. Reserva un colchón extra antes de estos meses.</div>
+      <div id="estacionalidad-chart"></div>
+      <div id="estacionalidad-tips" style="margin-top:16px"></div>
+    </div>
+  </div>
+
+</main>
+</div>
+
+<!-- ══════════════════════════════════════════════ MODALS -->
+
+<!-- Add transaction -->
+<div class="modal-overlay" id="modal-add-txn">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Añadir movimiento</div>
+      <button class="modal-close" onclick="closeModal('modal-add-txn')">×</button>
+    </div>
+    <div class="form-group"><label>Concepto</label><input type="text" id="new-txn-name" placeholder="Descripción"></div>
+    <div class="form-row">
+      <div class="form-group"><label>Importe (€)</label><input type="number" id="new-txn-amount" placeholder="-25.00" step="0.01"></div>
+      <div class="form-group"><label>Fecha</label><input type="date" id="new-txn-date"></div>
+    </div>
+    <div class="form-group"><label>Categoría</label><select id="new-txn-cat"></select></div>
+    <button class="btn btn-primary" style="width:100%" onclick="addManualTxn()">Añadir</button>
+  </div>
+</div>
+
+<!-- Claude import modal -->
+<div class="modal-overlay" id="modal-claude-import">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-header">
+      <div class="modal-title">🤖 Importar movimientos desde Claude</div>
+      <button class="modal-close" onclick="closeModal('modal-claude-import')">×</button>
+    </div>
+    <div style="background:var(--surface2);border-radius:12px;padding:16px;margin-bottom:16px;font-size:13px;line-height:1.7;color:var(--text)">
+      <strong>¿Cómo funciona?</strong><br>
+      1. Abre Claude (o el Project que tengas) y escríbele algo como:<br>
+      <code style="background:var(--bg);padding:6px 10px;border-radius:8px;display:block;margin:8px 0;font-size:12px;color:var(--accent)">"Hoy gasté 4,50€ en Macadamia y 9€ en el Mercadona. También me pagó Ana 12€ por bizum."</code>
+      2. Claude te devolverá un JSON. Pégalo aquí y los movimientos se añaden solos.
+    </div>
+    <div style="background:var(--bg);border-radius:10px;padding:12px;margin-bottom:14px;font-size:12px;color:var(--muted);border:1px solid var(--border)">
+      <strong style="color:var(--text)">📋 Prompt para tu Project de Claude:</strong><br>
+      <span id="claude-prompt-text">Eres mi asistente financiero personal. Cuando yo te describa mis gastos en lenguaje natural (ej: "hoy gasté 4,50€ en el café y 25€ en Zara"), debes devolver ÚNICAMENTE un array JSON con este formato exacto, sin texto antes ni después, sin markdown, sin explicaciones:
+
+[{"name":"nombre del comercio","amount":-4.50,"date":"2026-06-07","category":"restaurantes"},{"name":"Zara","amount":-25.00,"date":"2026-06-07","category":"ropa"}]
+
+Reglas:
+- amount NEGATIVO para gastos, POSITIVO para ingresos
+- date en formato YYYY-MM-DD (si no lo digo, usa la fecha de hoy)
+- category debe ser una de estas exactas: supermercado, restaurantes, ropa, salud, transporte, ocio, belleza, hogar, bizum, ingreso, traspaso, sin_cat
+- Si no estás segura de la categoría, usa sin_cat
+- Si digo "me pagó X", amount positivo, category ingreso
+- Si digo "transferí/mandé a ahorro", category traspaso
+- NUNCA escribas nada más que el JSON puro</span>
+      <button onclick="copyClaudePrompt()" style="display:block;margin-top:8px;background:var(--accent);color:white;border:none;padding:6px 12px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600">📋 Copiar prompt</button>
+    </div>
+    <div class="form-group">
+      <label>Pega aquí el JSON que te devuelve Claude</label>
+      <textarea id="claude-import-json" rows="6" placeholder='[{"name":"Macadamia","amount":-4.50,"date":"2026-06-07","category":"restaurantes"},...]' style="font-family:var(--font-mono);font-size:12px"></textarea>
+    </div>
+    <div id="claude-import-preview" style="margin-bottom:14px"></div>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-secondary btn-sm" onclick="previewClaudeImport()">👁 Vista previa</button>
+      <button class="btn btn-primary" style="flex:1" onclick="confirmClaudeImport()">✅ Importar movimientos</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit transaction category -->
+<div class="modal-overlay" id="modal-edit-txn">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Editar movimiento</div>
+      <button class="modal-close" onclick="closeModal('modal-edit-txn')">×</button>
+    </div>
+    <div id="edit-txn-info" style="background:var(--surface2);border-radius:10px;padding:14px;margin-bottom:18px;font-size:13px"></div>
+    <div class="form-group"><label>Categoría</label><select id="edit-txn-cat"></select></div>
+    <div class="form-group"><label>Nota personal</label><input type="text" id="edit-txn-note" placeholder="Añade una nota…"></div>
+    <div class="form-group">
+      <label>Tipo de compra</label>
+      <div style="display:flex;gap:8px;margin-top:4px">
+        <button id="btn-impulsivo-off" class="btn btn-secondary btn-sm" style="flex:1" onclick="setImpulsivo(false)">✅ Planificada</button>
+        <button id="btn-impulsivo-on" class="btn btn-secondary btn-sm" style="flex:1" onclick="setImpulsivo(true)">⚡ Impulsiva</button>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-primary" style="flex:1" onclick="saveEditTxn()">Guardar</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteEditTxn()">🗑</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add reto -->
+<div class="modal-overlay" id="modal-add-reto">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Nuevo reto</div>
+      <button class="modal-close" onclick="closeModal('modal-add-reto')">×</button>
+    </div>
+    <div class="form-group"><label>Nombre del reto</label><input type="text" id="reto-name" placeholder="ej. 7 días sin ropa"></div>
+    <div class="form-row">
+      <div class="form-group"><label>Duración (días)</label><input type="number" id="reto-dias" value="7" min="1"></div>
+      <div class="form-group"><label>Emoji</label><input type="text" id="reto-emoji" placeholder="🎯" maxlength="4"></div>
+    </div>
+    <div class="form-group">
+      <label>Categoría a evitar</label>
+      <select id="reto-cat"></select>
+    </div>
+    <button class="btn btn-primary" style="width:100%" onclick="addReto()">Empezar reto</button>
+  </div>
+</div>
+
+<!-- Add category -->
+<div class="modal-overlay" id="modal-add-cat">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Nueva categoría</div>
+      <button class="modal-close" onclick="closeModal('modal-add-cat')">×</button>
+    </div>
+    <div class="form-group"><label>Nombre</label><input type="text" id="new-cat-name" placeholder="ej. Transporte"></div>
+    <div class="form-row">
+      <div class="form-group"><label>Emoji</label><input type="text" id="new-cat-emoji" placeholder="🚗" maxlength="4"></div>
+      <div class="form-group"><label>Color</label><input type="color" id="new-cat-color" value="#7e6fc4"></div>
+    </div>
+    <div class="form-group">
+      <label>Palabras clave (separadas por coma)</label>
+      <textarea id="new-cat-keywords" rows="2" placeholder="mercadona, lidl, aldi"></textarea>
+    </div>
+    <button class="btn btn-primary" style="width:100%" onclick="addCategory()">Crear categoría</button>
+  </div>
+</div>
+
+<!-- Add gasto fijo -->
+<div class="modal-overlay" id="modal-add-fijo">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Gasto fijo</div>
+      <button class="modal-close" onclick="closeModal('modal-add-fijo')">×</button>
+    </div>
+    <div class="form-group"><label>Nombre</label><input type="text" id="fijo-name" placeholder="ej. CaixaBank cuota"></div>
+    <div class="form-row">
+      <div class="form-group"><label>Importe (€)</label><input type="number" id="fijo-amount" step="0.01"></div>
+      <div class="form-group"><label>Día del mes</label><input type="number" id="fijo-day" min="1" max="31" value="1"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>¿Cada cuánto pagas esto?</label>
+        <select id="fijo-freq">
+          <option value="1">Cada mes</option>
+          <option value="2">Cada 2 meses</option>
+          <option value="3">Cada trimestre (3 meses)</option>
+          <option value="6">Cada semestre (6 meses)</option>
+          <option value="12">Cada año</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Categoría</label><select id="fijo-cat"></select></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Emoji</label><input type="text" id="fijo-emoji" placeholder="📱" maxlength="4"></div>
+      <div class="form-group"><label>¿Es un traspaso interno (no gasto)?</label><select id="fijo-traspaso"><option value="0">No, es gasto real</option><option value="1">Sí, traspaso interno</option></select></div>
+    </div>
+    <button class="btn btn-primary" style="width:100%" onclick="addFijo()">Guardar</button>
+  </div>
+</div>
+
+<!-- Add límite -->
+<div class="modal-overlay" id="modal-add-limite">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Nuevo límite de gasto 🚦</div>
+      <button class="modal-close" onclick="closeModal('modal-add-limite')">×</button>
+    </div>
+    <div style="background:var(--surface2);border-radius:10px;padding:12px;margin-bottom:16px;font-size:12px;color:var(--muted);line-height:1.5">
+      💡 El límite funciona por mes natural (del 1 al último día). La app suma automáticamente lo que gastas en esa categoría durante el mes y te avisa cuando te acercas al tope. Se reinicia solo cada 1 de mes.
+    </div>
+    <div class="form-group"><label>Categoría</label><select id="limite-cat"></select></div>
+    <div class="form-group"><label>Límite mensual máximo (€)</label><input type="number" id="limite-amount" step="1" placeholder="ej. 150"></div>
+    <button class="btn btn-primary" style="width:100%" onclick="addLimite()">Guardar límite</button>
+  </div>
+</div>
+
+<!-- Add meta ahorro -->
+<div class="modal-overlay" id="modal-add-meta">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Meta de ahorro</div>
+      <button class="modal-close" onclick="closeModal('modal-add-meta')">×</button>
+    </div>
+    <div class="form-group"><label>Nombre del objetivo</label><input type="text" id="meta-name" placeholder="ej. Viaje a Japón"></div>
+    <div class="form-row">
+      <div class="form-group"><label>Objetivo (€)</label><input type="number" id="meta-goal" step="1"></div>
+      <div class="form-group"><label>Ya tengo (€)</label><input type="number" id="meta-current" step="1" value="0"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Emoji</label><input type="text" id="meta-emoji" placeholder="✈️" maxlength="4"></div>
+      <div class="form-group"><label>Color</label><input type="color" id="meta-color" value="#7e6fc4"></div>
+    </div>
+    <button class="btn btn-primary" style="width:100%" onclick="addMeta()">Crear meta</button>
+  </div>
+</div>
+
+<!-- Add cuenta patrimonio -->
+<div class="modal-overlay" id="modal-add-cuenta">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Añadir cuenta o activo</div>
+      <button class="modal-close" onclick="closeModal('modal-add-cuenta')">×</button>
+    </div>
+    <div class="form-group"><label>Nombre</label><input type="text" id="cuenta-name" placeholder="ej. Cuenta de ahorro ING"></div>
+    <div class="form-row">
+      <div class="form-group"><label>Saldo (€)</label><input type="number" id="cuenta-saldo" step="0.01"></div>
+      <div class="form-group"><label>Tipo</label>
+        <select id="cuenta-tipo">
+          <option value="corriente">💳 Cuenta corriente</option>
+          <option value="ahorro">🏦 Cuenta de ahorro</option>
+          <option value="inversion">📈 Inversión</option>
+          <option value="efectivo">💵 Efectivo</option>
+          <option value="otro">📦 Otro</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Rentabilidad anual (%)</label><input type="number" id="cuenta-rent" step="0.01" placeholder="0.85" value="0"></div>
+      <div class="form-group"><label>Emoji</label><input type="text" id="cuenta-emoji" placeholder="🏦" maxlength="4"></div>
+    </div>
+    <div class="form-group">
+      <label>¿Es dinero "traspasable" (como Revolut)?</label>
+      <select id="cuenta-traspaso">
+        <option value="0">No, es dinero final</option>
+        <option value="1">Sí, es un traspaso/puente</option>
+      </select>
+    </div>
+    <button class="btn btn-primary" style="width:100%" onclick="addCuenta()">Añadir</button>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════
+//  DATA LAYER
+// ═══════════════════════════════════════════════════════════════════
+
+// Raw CSV embedded (processed)
+const RAW_CSV = `BIZUM ENVIADO,07/06/2026,-13.50
+BOUTIQUE DEL CAFE,06/06/2026,-13.25
+BIZUM ENVIADO,06/06/2026,-25.00
+Revolut**0017*,06/06/2026,-70.00
+LA SOBERANA PANAD,05/06/2026,-8.80
+BIZUM RECIBIDO,05/06/2026,5.00
+MERCADONA ANTONIO,04/06/2026,-6.97
+Revolut**0017*,04/06/2026,-21.00
+FARMACIA JESUS GO,02/06/2026,-5.60
+BIZUM RECIBIDO,01/06/2026,7.00
+DIALPRIX,01/06/2026,-4.39
+CAIXABANK PAYM,01/06/2026,-195.60
+BERSHKA,29/05/2026,5.99
+PRIMARK LALJUB,29/05/2026,-14.50
+NOMINA (TRF),28/05/2026,1452.66
+DIALPRIX,28/05/2026,-2.49
+BIZUM RECIBIDO,27/05/2026,6.50
+CAFETERIA ENFASIS,27/05/2026,-12.50
+BANDERAS PORRAS,26/05/2026,-13.02
+LA GATERA,23/05/2026,-2.50
+BIZUM ENVIADO,23/05/2026,-27.60
+NYX*TECNOTRON,22/05/2026,-3.00
+STRADIVARIUS,22/05/2026,-25.99
+BERSHKA,22/05/2026,-25.98
+STRADIVARIUS,22/05/2026,25.99
+MERCADONA ANTONIO,22/05/2026,-9.10
+CAFETERIA BURGER,22/05/2026,-4.20
+COPISTERIA ILICIT,18/05/2026,-34.20
+HAGEN-DAZS ELCHE,17/05/2026,-18.05
+BIZUM ENVIADO,17/05/2026,-21.00
+BK14976 ELCHE ALJ,16/05/2026,-24.52
+BARABACOA GASTRON,15/05/2026,-29.90
+AVANZA ELCHE,15/05/2026,-1.35
+LA BOTIGUETA DEL,15/05/2026,-4.80
+Revolut**0017*,14/05/2026,-18.00
+REINTEGRO CON CODIG,13/05/2026,-20.00
+BIZUM RECIBIDO,13/05/2026,3.00
+DRUNI,12/05/2026,-7.68
+BIZUM ENVIADO,12/05/2026,-10.75
+LA BOTIGUETA DEL,11/05/2026,-8.75
+BIZUM ENVIADO,10/05/2026,-3.00
+BIZUM RECIBIDO,10/05/2026,12.00
+BIZUM ENVIADO,09/05/2026,-24.00
+BIZUM ENVIADO,08/05/2026,-14.00
+BIZUM RECIBIDO,08/05/2026,10.50
+BIZUM RECIBIDO,08/05/2026,3.00
+BIZUM RECIBIDO,08/05/2026,4.30
+BIZUM RECIBIDO,08/05/2026,4.30
+DABEL,08/05/2026,-21.10
+CAFETERIA BISTREA,08/05/2026,-4.00
+MERCADONA CRISTOB,06/05/2026,-5.50
+MERCADONA ANTONIO,05/05/2026,-7.90
+BIZUM ENVIADO,02/05/2026,-17.40
+BIZUM RECIBIDO,02/05/2026,7.00
+MERCADONA CRISTOB,02/05/2026,-12.65
+BIZUM ENVIADO,02/05/2026,-17.85
+BIZUM RECIBIDO,01/05/2026,5.40
+BIZUM RECIBIDO,01/05/2026,5.40
+BIZUM RECIBIDO,01/05/2026,5.40
+BIZUM RECIBIDO,01/05/2026,6.00
+CLICK AND PLAN,01/05/2026,-32.40
+Revolut**0017*,01/05/2026,-10.00
+Revolut**0017*,01/05/2026,-30.00
+MERCADONA ANTONIO,30/04/2026,-3.58
+BIZUM ENVIADO,30/04/2026,-52.00
+MAYORAL ELCHE,30/04/2026,-29.99
+NAYMA RESTAURACIO,30/04/2026,-8.20
+CAIXABANK PAYM,30/04/2026,-195.60
+SAMUEL ASENSIO,29/04/2026,-35.00
+MERCADONA ANTONIO,28/04/2026,-16.75
+NOMINA (TRF),28/04/2026,1452.66
+BIZUM ENVIADO,26/04/2026,-17.00
+MACADAMIA CAFE,24/04/2026,-5.40
+Revolut**0017*,24/04/2026,-10.00
+Revolut**0017*,23/04/2026,-18.00
+STRADIVARIUS,22/04/2026,-25.99
+AVANZA ELCHE,22/04/2026,-1.35
+CAFETERIA ENFASIS,22/04/2026,-4.60
+DIALPRIX,22/04/2026,-2.49
+CLINICA ALMA MART,21/04/2026,-60.00
+MERCADONA ANTONIO,18/04/2026,-5.55
+BIZUM RECIBIDO,17/04/2026,3.30
+BIZUM ENVIADO,17/04/2026,-3.12
+LA GALERIA DEL PI,17/04/2026,-10.90
+MERCADONA ANTONIO,17/04/2026,-5.50
+LA GALERIA DEL PI,17/04/2026,-5.00
+Revolut**0017*,16/04/2026,-57.00
+MERCADONA ANTONIO,16/04/2026,-6.30
+MERCADONA CRISTOB,16/04/2026,-5.50
+TRANSFER INMEDIATA,13/04/2026,161.00
+TRANSFER INMEDIATA,13/04/2026,129.35
+Revolut**0017*,13/04/2026,-129.87
+Revolut**0017*,13/04/2026,-113.78
+Revolut**0017*,13/04/2026,-11.49
+Revolut**0017*,13/04/2026,-45.97
+Revolut**0017*,13/04/2026,-11.49
+TRANSFER INMEDIATA,12/04/2026,38.00
+BIZUM ENVIADO,12/04/2026,-15.50
+BIZUM RECIBIDO,11/04/2026,14.10
+E110 Elche,11/04/2026,-37.50
+Revolut**0017*,11/04/2026,-38.00
+CAFETERIA DALI,10/04/2026,-5.20
+CAFETERIA BISTREA,10/04/2026,-14.10
+Revolut**0017*,06/04/2026,-800.00
+Revolut**0017*,06/04/2026,-21.00
+BIZUM ENVIADO,06/04/2026,-200.00
+BIZUM RECIBIDO,06/04/2026,7.00
+BIZUM RECIBIDO,04/04/2026,12.50
+BK14976 ELCHE ALJ,04/04/2026,-25.12
+BIZUM ENVIADO,03/04/2026,-13.00
+BIZUM ENVIADO,03/04/2026,-3.80
+BIZUM RECIBIDO,03/04/2026,25.00
+RTE. ASIATICO GEN,02/04/2026,-49.35
+NAYMA RESTAURACIO,01/04/2026,-9.65
+OH MY SWEETEA,01/04/2026,-9.50
+LA BOTIGUETA DEL,31/03/2026,-5.25
+CAIXABANK PAYM,31/03/2026,-195.60
+BIZUM ENVIADO,29/03/2026,-18.00
+HOLIDAY GYM-HOLID,29/03/2026,-99.00
+BIZUM ENVIADO,29/03/2026,-9.70
+BERSHKA,27/03/2026,-25.99
+LALJUB,27/03/2026,-13.27
+BIZUM ENVIADO,27/03/2026,-6.50
+CAFETERIA BURGER,27/03/2026,-4.50
+CASA DEL LIBRO,26/03/2026,-17.95
+MERCADONA ANTONIO,26/03/2026,-8.35
+NOMINA (TRF),26/03/2026,1452.66
+CLINICA ALMA MART,26/03/2026,-60.00
+BIZUM ENVIADO,25/03/2026,-5.95
+MERCADONA CRISTOB,25/03/2026,-5.50
+Revolut**0017*,24/03/2026,-11.00
+EL CANDIL KEBAP,20/03/2026,-6.50
+MERCADONA ANTONIO,20/03/2026,-7.10
+BIZUM ENVIADO,18/03/2026,-14.10
+BERSHKA,18/03/2026,13.99
+LEFTIES,18/03/2026,-17.99
+ONCE,18/03/2026,-5.00
+DIALPRIX,18/03/2026,-7.03
+Revolut**0017*,17/03/2026,-10.00
+BIZUM ENVIADO,15/03/2026,-25.78
+DIALPRIX,13/03/2026,-2.20
+MERCADONA ANTONIO,11/03/2026,-8.92
+DIALPRIX,10/03/2026,-8.76
+BIZUM ENVIADO,08/03/2026,-21.63
+BIZUM RECIBIDO,07/03/2026,7.00
+EL AHORRO,07/03/2026,-3.20
+MERCADONA ELCHE,07/03/2026,-18.05
+Revolut**0017*,07/03/2026,-21.00
+BERSHKA,06/03/2026,-27.98
+STRADIVARIUS,06/03/2026,-22.99
+BERSHKA,06/03/2026,-13.99
+CAFETERIA BISTREA,06/03/2026,-1.60
+ALDI ELCHE,03/03/2026,-8.37
+DIALPRIX,03/03/2026,-5.19
+FARMACIA RUIZ MAC,03/03/2026,-14.95
+MACADAMIA CAFE,02/03/2026,-4.50
+CAIXABANK PAYM,02/03/2026,-195.60
+MAS QUE MIGAS,27/02/2026,-3.00
+CAFETERIA BISTREA,27/02/2026,-3.60
+NOMINA (TRF),27/02/2026,1452.66
+BIZUM RECIBIDO,25/02/2026,2.20
+DIALPRIX,25/02/2026,-6.29
+MERCADONA ANTONIO,24/02/2026,-3.35
+DIALPRIX,23/02/2026,-7.68
+EL CANDIL KEBAP,21/02/2026,-13.00
+CONSUM ELCHE,21/02/2026,-4.98
+MUSEO CASA ORDUNA,21/02/2026,-8.00
+BIZUM RECIBIDO,21/02/2026,20.00
+CAFETERIA ENFASIS,20/02/2026,-9.00
+AVANZA ELCHE,20/02/2026,-1.35
+MERCADONA ANTONIO,19/02/2026,-3.70
+CLINICA ALMA MART,19/02/2026,-60.00
+DIALPRIX,19/02/2026,-6.39
+AVANZA ELCHE,19/02/2026,-1.35
+Revolut**0017*,17/02/2026,-30.00
+AVANZA ELCHE,17/02/2026,-1.35
+Revolut**0017*,17/02/2026,-10.00
+MERCADONA ANTONIO,16/02/2026,-7.70
+STRADIVARIUS,16/02/2026,-31.98
+PRIMARK LALJUB,16/02/2026,-42.65
+DIALPRIX,16/02/2026,-5.09
+BIZUM ENVIADO,15/02/2026,-17.50
+Revolut**0017*,13/02/2026,-10.00
+Revolut**0017*,13/02/2026,-26.00
+Revolut**0017*,13/02/2026,-10.00
+KAFFEKOS,13/02/2026,-6.40
+DIALPRIX,11/02/2026,-5.98
+BIZUM ENVIADO,10/02/2026,-69.00
+DIALPRIX,09/02/2026,-3.89
+BIZUM RECIBIDO,08/02/2026,13.75
+BIZUM RECIBIDO,08/02/2026,13.75
+BIZUM RECIBIDO,08/02/2026,10.75
+BIZUM RECIBIDO,08/02/2026,13.75
+BIZUM RECIBIDO,07/02/2026,13.74
+PIZZERIAS CARLOS,07/02/2026,-79.44
+MERCADONA ANTONIO,07/02/2026,-8.90
+BIZUM RECIBIDO,07/02/2026,20.75
+VALHOLL,06/02/2026,-41.50
+RACO DE JOAN,06/02/2026,-4.60
+DIALPRIX,05/02/2026,-3.89
+Revolut**0017*,04/02/2026,-10.00
+CAFETERIA ENFASIS,03/02/2026,-17.50
+PUM ENGLISH,03/02/2026,-60.00
+MERCADONA ANTONIO,02/02/2026,-6.90
+BIZUM RECIBIDO,02/02/2026,7.00
+BIZUM RECIBIDO,01/02/2026,18.00
+GINOS ELCHE,31/01/2026,-45.18
+NOMINA (TRF),31/01/2026,1452.66
+CAIXABANK PAYM,30/01/2026,-195.60
+MACADAMIA CAFE,29/01/2026,-9.50
+STRADIVARIUS,27/01/2026,-25.99
+PRIMARK LALJUB,27/01/2026,-19.15
+STRADIVARIUS,27/01/2026,19.99
+BERSHKA,27/01/2026,21.98
+PULL AND BEAR,27/01/2026,43.77
+MERCADONA ANTONIO,27/01/2026,-1.75
+BIZUM RECIBIDO,26/01/2026,21.00
+BIZUM RECIBIDO,26/01/2026,10.50
+DIALPRIX,26/01/2026,-7.73
+BIZUM ENVIADO,25/01/2026,-8.80
+MCDONALDS ELCHE,24/01/2026,-9.02
+BIZUM ENVIADO,23/01/2026,-5.40
+RENFE CERCANIAS,23/01/2026,-3.70
+BIZUM ENVIADO,23/01/2026,-6.60
+BIZUM ENVIADO,23/01/2026,-29.77
+BIZUM ENVIADO,23/01/2026,-25.72
+BIZUM ENVIADO,23/01/2026,-60.00
+DIALPRIX,20/01/2026,-7.74
+DIALPRIX,19/01/2026,-7.89
+Revolut**0017*,18/01/2026,-30.00
+Revolut**0017*,18/01/2026,-30.00
+MERCADONA ANTONIO,17/01/2026,-12.25
+BIZUM RECIBIDO,16/01/2026,8.00
+TACO BELL,16/01/2026,-17.41
+STRADIVARIUS,16/01/2026,-35.98
+BERSHKA,16/01/2026,-21.98
+PULL AND BEAR,16/01/2026,-57.86
+DIALPRIX,13/01/2026,-4.07
+AVANZA ELCHE,13/01/2026,-1.35
+EL CANDIL KEBAP,09/01/2026,-7.00
+RENFE CERCANIAS,09/01/2026,-6.40
+DIALPRIX,09/01/2026,-3.94
+DIALPRIX,08/01/2026,-3.29
+BIZUM RECIBIDO,07/01/2026,7.00
+MERCADONA ANTONIO,05/01/2026,-6.15
+DIALPRIX,05/01/2026,-2.69
+PUM ENGLISH,05/01/2026,-60.00
+BIZUM ENVIADO,04/01/2026,-75.00
+BIZUM RECIBIDO,04/01/2026,4.00
+BIZUM RECIBIDO,04/01/2026,3.00
+BIZUM RECIBIDO,04/01/2026,4.50
+BIZUM RECIBIDO,04/01/2026,4.50
+BIZUM RECIBIDO,03/01/2026,23.50
+BIZUM RECIBIDO,03/01/2026,23.50
+BIZUM RECIBIDO,03/01/2026,23.50
+BIZUM RECIBIDO,03/01/2026,23.50
+BIZUM RECIBIDO,03/01/2026,23.50
+BIZUM RECIBIDO,03/01/2026,23.50
+BIZUM RECIBIDO,03/01/2026,23.50
+BIZUM RECIBIDO,03/01/2026,23.50
+RTE. ASIATICO GEN,03/01/2026,-222.55
+CONSUM ELCHE,02/01/2026,-2.99
+LA FAENETA,02/01/2026,-3.70
+Revolut**0017*,01/01/2026,-25.00
+Revolut**0017*,01/01/2026,-16.00
+BIZUM RECIBIDO,01/01/2026,24.93
+BIZUM RECIBIDO,01/01/2026,31.27
+DIA 1582,30/12/2025,-62.96
+MERCADONA ANTONIO,30/12/2025,-25.61
+CAIXABANK PAYM,30/12/2025,-195.60
+CLINICA ALMA MART,29/12/2025,-60.00
+HOLIDAY GYM-HOLID,28/12/2025,-99.00
+PRIMARK LALJUB,27/12/2025,-6.00
+LALJUB,27/12/2025,-12.55
+Revolut**0017*,26/12/2025,-30.00
+Revolut**0017*,26/12/2025,-10.00
+TRANSF. A SU FAVOR,25/12/2025,757.82
+BIZUM ENVIADO,24/12/2025,-17.00
+DECOLORES ELCHE,24/12/2025,-70.00
+PRIMARK LALJUB,24/12/2025,-12.50
+TRANSF. A SU FAVOR,23/12/2025,1298.55
+MERCADONA ANTONIO,22/12/2025,-25.25
+BIZUM ENVIADO,21/12/2025,-28.80
+BIZUM RECIBIDO,21/12/2025,11.90
+BIZUM RECIBIDO,20/12/2025,12.00
+FNAC BULEVAR,20/12/2025,-54.18
+Vezzo CC L'Aljub,19/12/2025,-28.30
+LALJUB,19/12/2025,-19.32
+PRIMARK LALJUB,19/12/2025,-13.15
+KAFFEKOS,19/12/2025,-6.60
+BIZUM RECIBIDO,18/12/2025,25.00
+DIALPRIX,18/12/2025,-4.14
+PANADERIA ESPIGA,18/12/2025,-20.10
+Revolut**0017*,17/12/2025,-10.00
+Revolut**0017*,17/12/2025,-10.00
+DIALPRIX,15/12/2025,-5.14
+BIZUM ENVIADO,14/12/2025,-81.00
+BIZUM RECIBIDO,13/12/2025,16.57
+MESTIZAJE,13/12/2025,-54.45
+KAFFEKOS,12/12/2025,-6.30
+BIZUM RECIBIDO,11/12/2025,4.30
+DIALPRIX,11/12/2025,-9.37
+CLINICA ALMA MART,09/12/2025,-60.00
+BIZUM RECIBIDO,09/12/2025,7.00
+BIZUM ENVIADO,08/12/2025,-28.00
+BIZUM RECIBIDO,06/12/2025,13.91
+BIZUM RECIBIDO,06/12/2025,13.90
+BIZUM RECIBIDO,06/12/2025,13.91
+RAMEN TATSUNOYA E,06/12/2025,-59.60
+CAFETERIA BISTREA,05/12/2025,-3.60
+MERCADONA ANTONIO,04/12/2025,-1.95
+RESTAURANTE MESTI,04/12/2025,-35.00
+BIZUM RECIBIDO,03/12/2025,28.00
+DIALPRIX,03/12/2025,-4.68
+PUM ENGLISH,03/12/2025,-60.00
+DIALPRIX,02/12/2025,-5.75
+CAFETERIA ENFASIS,01/12/2025,-1.40
+DIALPRIX,01/12/2025,-3.29
+CAIXABANK PAYM,01/12/2025,-195.60
+Revolut**0017*,01/12/2025,-10.00
+Revolut**0017*,01/12/2025,-20.00
+Revolut**0017*,01/12/2025,-65.00
+Revolut**0017*,01/12/2025,-20.00
+Revolut**0017*,30/11/2025,-10.00
+Revolut**0017*,30/11/2025,-15.00
+TIENDA3,30/11/2025,-11.19
+BIZUM ENVIADO,30/11/2025,-24.00
+NOMINA (TRF),29/11/2025,1298.55
+ZARA ELCHE,28/11/2025,-15.57
+CAFETERIA BISTREA,28/11/2025,-3.60
+Revolut**0017*,27/11/2025,-10.00
+AVANZA ELCHE,27/11/2025,-1.35
+Revolut**0017*,26/11/2025,-10.00
+CLINICA ALMA MART,26/11/2025,-60.00
+LA BOTIGUETA DEL,25/11/2025,-4.00
+BIZUM RECIBIDO,23/11/2025,5.20
+Revolut**0017*,23/11/2025,-10.00
+MERCADONA C.C.LA,22/11/2025,-45.48
+RENFE CERCANIAS,22/11/2025,-2.70
+BIZUM ENVIADO,21/11/2025,-11.05
+KAFFEKOS,21/11/2025,-5.50
+DECOLORES ELCHE,17/11/2025,-15.00
+DIALPRIX,17/11/2025,-2.55
+MERCADONA ANTONIO,15/11/2025,-7.49
+BIZUM ENVIADO,14/11/2025,-5.40
+KAFFEKOS,14/11/2025,-5.70
+BIZUM RECIBIDO,13/11/2025,3.00
+DIALPRIX,12/11/2025,-6.84
+BIZUM RECIBIDO,12/11/2025,20.00
+Revolut**0017*,12/11/2025,-40.00
+MERCADONA ANTONIO,10/11/2025,-8.13
+MERCADONA ANTONIO,07/11/2025,-2.80
+DIALPRIX,07/11/2025,-1.85
+NOMINA (TRF),31/10/2025,1298.55
+CAIXABANK PAYM,31/10/2025,-195.60
+HOLIDAY GYM-HOLID,31/10/2025,-99.00
+CLINICA ALMA MART,30/10/2025,-60.00
+MERCADONA ANTONIO,28/10/2025,-8.50
+DIALPRIX,27/10/2025,-3.85
+Revolut**0017*,27/10/2025,-20.00
+BIZUM ENVIADO,26/10/2025,-10.00
+CAFETERIA ENFASIS,24/10/2025,-5.00
+KAFFEKOS,23/10/2025,-5.50
+DIALPRIX,22/10/2025,-5.43
+MERCADONA ANTONIO,21/10/2025,-5.95
+MACADAMIA CAFE,18/10/2025,-4.50
+DIALPRIX,17/10/2025,-3.79
+Revolut**0017*,16/10/2025,-20.00
+BIZUM RECIBIDO,15/10/2025,5.00
+BIZUM ENVIADO,13/10/2025,-12.00
+CINES LALJUB,12/10/2025,-8.00
+CLINICA ALMA MART,10/10/2025,-60.00
+Revolut**0017*,10/10/2025,-10.00
+Revolut**0017*,09/10/2025,-10.00
+MERCADONA ANTONIO,08/10/2025,-7.65
+DIALPRIX,07/10/2025,-4.50
+NOMINA (TRF),30/09/2025,1298.55
+CAIXABANK PAYM,30/09/2025,-195.60
+HOLIDAY GYM-HOLID,30/09/2025,-99.00
+CLINICA ALMA MART,29/09/2025,-60.00
+MERCADONA ANTONIO,25/09/2025,-9.10
+Revolut**0017*,24/09/2025,-15.00
+DIALPRIX,23/09/2025,-5.25
+BIZUM RECIBIDO,20/09/2025,12.00
+CAFETERIA ENFASIS,19/09/2025,-6.50
+Revolut**0017*,18/09/2025,-20.00
+MERCADONA ANTONIO,17/09/2025,-8.30
+PUM ENGLISH,15/09/2025,-60.00
+DIALPRIX,12/09/2025,-4.80
+BIZUM ENVIADO,10/09/2025,-15.00
+Revolut**0017*,08/09/2025,-10.00
+MERCADONA ANTONIO,05/09/2025,-6.20
+CAIXABANK PAYM,01/09/2025,-195.60
+NOMINA (TRF),29/08/2025,1298.55
+HOLIDAY GYM-HOLID,29/08/2025,-99.00
+CLINICA ALMA MART,26/08/2025,-60.00
+Revolut**0017*,20/08/2025,-25.00
+MERCADONA ANTONIO,18/08/2025,-7.50
+DIALPRIX,15/08/2025,-4.20
+BIZUM ENVIADO,10/08/2025,-20.00
+MERCADONA ANTONIO,05/08/2025,-8.90
+CAIXABANK PAYM,01/08/2025,-195.60
+NOMINA (TRF),31/07/2025,1298.55
+HOLIDAY GYM-HOLID,31/07/2025,-99.00
+CLINICA ALMA MART,28/07/2025,-60.00
+MERCADONA ANTONIO,20/07/2025,-9.30
+Revolut**0017*,15/07/2025,-30.00
+BIZUM ENVIADO,10/07/2025,-25.00
+CAIXABANK PAYM,01/07/2025,-195.60
+NOMINA (TRF),30/06/2025,1298.55
+HOLIDAY GYM-HOLID,30/06/2025,-99.00
+CLINICA ALMA MART,25/06/2025,-60.00
+Revolut**0017*,20/06/2025,-20.00
+MERCADONA ANTONIO,15/06/2025,-8.10
+BIZUM ENVIADO,10/06/2025,-15.00
+CAIXABANK PAYM,01/06/2025,-195.60
+NOMINA (TRF),31/05/2025,1298.55
+HOLIDAY GYM-HOLID,31/05/2025,-99.00
+CLINICA ALMA MART,26/05/2025,-60.00
+MERCADONA ANTONIO,20/05/2025,-7.80
+PUM ENGLISH,05/05/2025,-60.00
+CAIXABANK PAYM,01/05/2025,-195.60
+NOMINA (TRF),30/04/2025,1298.55
+HOLIDAY GYM-HOLID,30/04/2025,-99.00
+CLINICA ALMA MART,25/04/2025,-60.00
+MERCADONA ANTONIO,20/04/2025,-8.50
+DIALPRIX,15/04/2025,-5.10
+CAIXABANK PAYM,01/04/2025,-195.60
+NOMINA (TRF),31/03/2025,1298.55
+HOLIDAY GYM-HOLID,31/03/2025,-99.00
+CLINICA ALMA MART,26/03/2025,-60.00
+Revolut**0017*,20/03/2025,-15.00
+MERCADONA ANTONIO,15/03/2025,-7.60
+PUM ENGLISH,03/03/2025,-60.00
+CAIXABANK PAYM,01/03/2025,-195.60
+NOMINA (TRF),28/02/2025,1298.55
+HOLIDAY GYM-HOLID,28/02/2025,-99.00
+CLINICA ALMA MART,24/02/2025,-60.00
+MERCADONA ANTONIO,18/02/2025,-9.20
+BIZUM ENVIADO,10/02/2025,-20.00
+CAIXABANK PAYM,01/02/2025,-195.60
+NOMINA (TRF),31/01/2025,1298.55
+HOLIDAY GYM-HOLID,31/01/2025,-99.00
+CLINICA ALMA MART,27/01/2025,-60.00
+MERCADONA ANTONIO,20/01/2025,-8.80
+DIALPRIX,10/01/2025,-4.50
+PUM ENGLISH,05/01/2025,-60.00
+CAIXABANK PAYM,01/01/2025,-195.60`;
+
+// ─── CATEGORIES (default)
+let categories = [
+  { id:'supermercado', name:'Supermercado', emoji:'🛒', color:'#5bbf8e', keywords:[
+    'mercadona','dialprix','lidl','aldi','consum','dia 1582','hiperber','el ahorro',
+    'carrefour','alcampo','eroski','hipercor','supersol','ahorramas','spar','covirán',
+    'condis','bonpreu','supeco','simply','gadis','dia '
+  ]},
+  { id:'restaurantes', name:'Cafeterías y restaurantes', emoji:'☕', color:'#e8976a', keywords:[
+    // Cafeterías y desayunos
+    'cafeteria','cafe ','kafe','cofee','coffee','cafes ','bistrea','enfasis','kaffekos','macadamia',
+    'boutique del cafe','la gatera','raco de joan','mas que migas','cafeteria dali',
+    'panaderia','espiga','soberana','la faeneta','tahona','bolleria','horno ',
+    'pasteleria','delicias',
+    // Restaurantes
+    'restaurant','ramen','pizzeria','ginos','barabacoa','nayma','mestizaje','valholl',
+    'banderas','BK14','burger','taco bell','mcdonalds','asiatico','vezzo',
+    'kebap','kebab','doner','shawarma',
+    // Postres / snacks
+    'sweetea','haagen','candy','bombon','llaollao','heladeria','gelateria',
+    'nyx','cocteleria',
+    // Comida rápida / delivery
+    'telepizza','dominos','just eat','glovo','uber eats','deliveroo',
+    'click and plan',
+    // Otros locales de comida de tus datos
+    'hagen-dazs','oh my sweetea','el candil'
+  ]},
+  { id:'ropa', name:'Ropa y moda', emoji:'👗', color:'#e05c6a', keywords:[
+    'stradivarius','bershka','pull and bear','primark','zara','lefties','laljub',
+    'h&m','deichmann','mayoral','tienda3','cortefiel','springfield','mango',
+    'shein','asos','nike ','adidas ','decathlon','fnac','el corte ingles moda',
+    'calzedonia','women secret','intimissimi','oysho','massimo dutti'
+  ]},
+  { id:'salud', name:'Salud y farmacia', emoji:'💊', color:'#a78bfa', keywords:[
+    'farmacia','clinica','druni','samuel asensio','dentista','medico','optica',
+    'fisioter','psicolog','nutricion','laborator','clinica alma','centro medico',
+    'parafarmacia','ortopedia','sanitas','adeslas','generali salud'
+  ]},
+  { id:'transporte', name:'Transporte', emoji:'🚌', color:'#6aade8', keywords:[
+    'avanza','renfe','subus','metropolitano','e110 elche','autob',
+    'taxi','cabify','uber','bolt','blablacar','ryanair','vueling','iberia',
+    'easyjet','renfe cercanias','metro ','parking','aparcamiento','gasolinera',
+    'repsol','bp ','cepsa','shell ','valcarce'
+  ]},
+  { id:'ocio', name:'Ocio y cultura', emoji:'🎭', color:'#c86ae8', keywords:[
+    'cines','casa del libro','libreria','fnac','once','decolores',
+    'galeria del pi','copisteria','dabel','museo','teatro','concierto',
+    'ticketmaster','eventbrite','planetarium','parque ','warner','portaventura',
+    'bowling','escape room','laser ','karting','feria','atraccion'
+  ]},
+  { id:'belleza', name:'Belleza y cuidado personal', emoji:'✨', color:'#fbbf24', keywords:[
+    'druni','samuel asensio','peluqueria','estetica','salon','spa ','depilacion',
+    'nail','unas ','masaje','perfumer','sephora','primor','bodybell',
+    'mercadona belleza'
+  ]},
+  { id:'hogar', name:'Hogar', emoji:'🏠', color:'#60a5fa', keywords:[
+    'ikea','leroy merlin','bricor','bricomart','el corte ingles hogar',
+    'zara home','casa ','kiwoko','animals','tiendanimal','amazon','aliexpress',
+    'correos','el corte ingles'
+  ]},
+  { id:'fijo_banco', name:'Cuotas fijas', emoji:'🏦', color:'#8a8499', keywords:[
+    'caixabank paym','holiday gym','pum english'
+  ]},
+  { id:'sin_cat', name:'Sin clasificar ⚠️', emoji:'❓', color:'#f59e0b', keywords:[]},
+  { id:'bizum', name:'Bizum enviado', emoji:'💸', color:'#fb7185', keywords:[]},
+  { id:'ingreso', name:'Ingresos', emoji:'💰', color:'#34d399', keywords:[
+    'nomina','transf. a su favor','transfer inmediata','bizum recibido',
+    'reintegro','transferencia recibida','samsungapps','paypal transferencia'
+  ]},
+  { id:'traspaso', name:'Traspaso (movimiento interno)', emoji:'🔄', color:'#94a3b8', keywords:[
+    'revolut**','revolut**0017*','revolut**8034*'
+  ]},
+  { id:'otros', name:'Otros', emoji:'📦', color:'#6b7280', keywords:[]},
+];
+
+let transactions = [];
+let fixedExpenses = [];
+let limits = [];
+let savingGoals = [];
+let editingIdx = null;
+let txnPage = 0;
+const TXN_PER_PAGE = 30;
+
+// ─── PARSE CSV
+function parseCSV() {
+  const lines = RAW_CSV.trim().split('\n');
+  const txns = [];
+  lines.forEach((line, i) => {
+    const parts = line.split(',');
+    if (parts.length < 3) return;
+    const name = parts[0].trim();
+    const dateStr = parts[1].trim();
+    const amount = parseFloat(parts[2].trim());
+    if (!dateStr || isNaN(amount)) return;
+    const [d, m, y] = dateStr.split('/');
+    const date = new Date(parseInt(y), parseInt(m)-1, parseInt(d));
+    txns.push({
+      id: i,
+      name,
+      date,
+      amount,
+      category: autoCategory(name, amount),
+      note: '',
+      manual: false,
+    });
+  });
+  return txns.sort((a,b) => b.date - a.date);
+}
+
+function autoCategory(name, amount) {
+  const n = name.toLowerCase().trim();
+
+  // Direct keyword match (most reliable)
+  for (const cat of categories) {
+    for (const kw of cat.keywords) {
+      if (n.includes(kw.toLowerCase().trim())) return cat.id;
+    }
+  }
+
+  // Fuzzy pattern matching for common Spanish commerce names
+  // Panadería / pastelería patterns
+  if (/panad|pastel|bollerí|tahon|horno|espiga|soberana|fanet|forn /.test(n)) return 'restaurantes';
+  // Cafetería patterns
+  if (/cafe|cafet|caffe|bistro|bar |cervece|tapas|terraza/.test(n)) return 'restaurantes';
+  // Supermercado patterns
+  if (/super|market|colmado|ultramarinos|comestib/.test(n)) return 'supermercado';
+  // Ropa / moda patterns
+  if (/modas|ropa|boutique|fashion|style|cloth|calzado|zapater/.test(n)) return 'ropa';
+  // Salud patterns
+  if (/salud|health|fisio|rehab|doctor|medic|hospital|clinica/.test(n)) return 'salud';
+  // Transport patterns
+  if (/taxi|vuelo|flight|parking|park |toll|peaje|estacion/.test(n)) return 'transporte';
+  // Ocio
+  if (/cine|teatro|museo|exhibit|concert|show |espect/.test(n)) return 'ocio';
+
+  // Bizum enviado: puede ser cualquier cosa (restaurante, regalo, compra...)
+  // Lo dejamos sin clasificar para que lo asignes tú
+  if (n.includes('bizum enviado')) return 'sin_cat';
+
+  if (amount > 0) return 'ingreso';
+  return 'otros';
+}
+
+function liveAutocat() {
+  const name = document.getElementById('txn-name').value;
+  const catSel = document.getElementById('txn-cat');
+  const hint = document.getElementById('autocat-hint');
+  const hintName = document.getElementById('autocat-hint-name');
+  if (!name || name.length < 3) { if (hint) hint.style.display = 'none'; return; }
+  const suggested = autoCategory(name, -1);
+  if (catSel) catSel.value = suggested;
+  if (hint && hintName) {
+    const cat = getCat(suggested);
+    hintName.textContent = cat.emoji + ' ' + cat.name;
+    hint.style.display = 'block';
+  }
+}
+
+function getCat(id) {
+  return categories.find(c => c.id === id) || categories[categories.length - 1];
+}
+
+function fmt(n) {
+  return n.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '€';
+}
+function fmtShort(n) {
+  if (Math.abs(n) >= 1000) return (n/1000).toFixed(1) + 'k€';
+  return fmt(n);
+}
+
+function dateLabel(d) {
+  return d.toLocaleDateString('es-ES', { day:'2-digit', month:'short', year:'2-digit' });
+}
+
+function monthKey(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+}
+function monthLabel(key) {
+  const [y, m] = key.split('-');
+  const d = new Date(y, m-1, 1);
+  return d.toLocaleDateString('es-ES', { month: 'short', year: '2-digit' });
+}
+
+// Filter by period (months back, 0=all)
+function filterPeriod(txns, months) {
+  if (!months) return txns;
+  const cutoff = new Date();
+  cutoff.setMonth(cutoff.getMonth() - months);
+  return txns.filter(t => t.date >= cutoff);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  NAVIGATION
+// ═══════════════════════════════════════════════════════════════════
+
+function showPanel(id) {
+  // Check if panel is hidden — if so don't navigate
+  const { hidden } = loadPanelConfig();
+  const panelDef = ALL_PANELS.find(p => p.id === id);
+  if (panelDef && hidden.has(id) && !panelDef.alwaysVisible) return;
+
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + id).classList.add('active');
+  // Update active state in dynamic nav
+  document.querySelectorAll('#sortable-nav .nav-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.panel === id);
+  });
+  // Desktop sidebar
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => {
+    if (n.getAttribute('onclick') && n.getAttribute('onclick').includes("'" + id + "'")) n.classList.add('active');
+  });
+  // Mobile bottom nav
+  document.querySelectorAll('.bnav-item').forEach(el => el.classList.remove('active'));
+  const bnavEl = document.getElementById('bnav-' + id);
+  if (bnavEl) bnavEl.classList.add('active');
+  if (id === 'dashboard') renderDashboard();
+  if (id === 'movimientos') renderMovimientos();
+  if (id === 'categorias') renderCategorias();
+  if (id === 'fijos') renderFijos();
+  if (id === 'limites') renderLimites();
+  if (id === 'ahorro') renderAhorro();
+  if (id === 'prediccion') renderPrediccion();
+  if (id === 'analisis') renderAnalisis();
+  if (id === 'patrimonio') renderPatrimonio();
+  if (id === 'regla') renderRegla();
+  if (id === 'retos') renderRetos();
+  if (id === 'inversion') renderInversion();
+}
+
+function openModal(id) {
+  populateModalSelects();
+  document.getElementById(id).classList.add('open');
+}
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+function populateModalSelects() {
+  const selects = [
+    'new-txn-cat','edit-txn-cat','fijo-cat','limite-cat','sim-cat',
+    'txn-cat-filter','reto-cat'
+  ];
+  selects.forEach(sid => {
+    const el = document.getElementById(sid);
+    if (!el) return;
+    const val = el.value;
+    if (sid === 'txn-cat-filter') {
+      el.innerHTML = '<option value="">Todas las categorías</option>';
+    } else {
+      el.innerHTML = '';
+    }
+    categories.forEach(c => {
+      const o = document.createElement('option');
+      o.value = c.id;
+      o.textContent = c.emoji + ' ' + c.name;
+      el.appendChild(o);
+    });
+    if (val) el.value = val;
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  DASHBOARD
+// ═══════════════════════════════════════════════════════════════════
+
+function renderDashboard() {
+  const months = parseInt(document.getElementById('dash-period').value);
+  const txns = filterPeriod(transactions, months);
+  const gastos = txns.filter(t => t.amount < 0 && t.category !== 'ingreso' && t.category !== 'traspaso');
+  const ingresos = txns.filter(t => t.amount > 0 && t.category !== 'traspaso');
+  const totalGasto = gastos.reduce((s,t) => s + Math.abs(t.amount), 0);
+  const totalIngreso = ingresos.reduce((s,t) => s + t.amount, 0);
+  const balance = totalIngreso - totalGasto;
+  const days = txns.length > 0
+    ? Math.max(1, Math.ceil((txns[0].date - txns[txns.length-1].date) / 86400000))
+    : 30;
+  const daily = totalGasto / days;
+
+  const label = months === 0 ? 'Todo el período' : `Últimos ${months} meses`;
+  document.getElementById('dash-subtitle').textContent = label + ' · ' + txns.length + ' movimientos';
+
+  document.getElementById('d-gastos').textContent = fmt(totalGasto);
+  document.getElementById('d-ingresos').textContent = fmt(totalIngreso);
+  document.getElementById('d-balance').textContent = fmt(balance);
+  document.getElementById('d-balance').style.color = balance >= 0 ? 'var(--green)' : 'var(--red)';
+  document.getElementById('d-daily').textContent = fmt(daily);
+
+  document.getElementById('d-gastos-sub').innerHTML = `<span>${gastos.length} transacciones</span>`;
+  document.getElementById('d-ingresos-sub').innerHTML = `<span>${ingresos.length} entradas</span>`;
+  document.getElementById('d-balance-sub').innerHTML = balance >= 0 ? '<span class="up">↑ Positivo</span>' : '<span class="down">↓ Negativo</span>';
+  document.getElementById('d-daily-sub').textContent = `en ${days} días`;
+
+  // ALERTS
+  renderAlerts();
+
+  // BAR CHART - gastos por mes
+  const byMonth = {};
+  gastos.forEach(t => {
+    const k = monthKey(t.date);
+    byMonth[k] = (byMonth[k] || 0) + Math.abs(t.amount);
+  });
+  const monthKeys = Object.keys(byMonth).sort().slice(-12);
+  const max = Math.max(...monthKeys.map(k => byMonth[k]), 1);
+  const barArea = document.getElementById('bar-chart-area');
+  barArea.innerHTML = `
+    <div class="bar-chart">
+      ${monthKeys.map(k => {
+        const h = Math.max(4, (byMonth[k] / max) * 110);
+        return `<div class="bar-wrap">
+          <div class="bar-val" style="font-size:9px;color:var(--muted)">${fmtShort(byMonth[k])}</div>
+          <div class="bar" style="height:${h}px;background:linear-gradient(180deg,var(--accent),rgba(200,169,110,.4))" title="${monthLabel(k)}: ${fmt(byMonth[k])}"></div>
+          <div class="bar-label">${monthLabel(k)}</div>
+        </div>`;
+      }).join('')}
+    </div>`;
+
+  // DONUT
+  renderDonut(txns);
+
+  // RECENT
+  const recent = document.getElementById('recent-list');
+  // Group by date for the dashboard recent list
+  const grouped = {};
+  transactions.slice(0, 20).forEach(t => {
+    const dk = t.date.toLocaleDateString('es-ES', {day:'2-digit', month:'short', year:'2-digit'});
+    if (!grouped[dk]) grouped[dk] = [];
+    grouped[dk].push(t);
+  });
+  recent.innerHTML = Object.entries(grouped).slice(0, 5).map(([dateStr, txnsDay]) => {
+    const rows = txnsDay.map(t => {
+      const cat = getCat(t.category);
+      const pos = t.amount > 0;
+      const needsCat = t.category === 'sin_cat';
+      return `<div onclick="openEditTxn(${t.id})" style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);cursor:pointer;" onmouseenter="this.style.background='var(--surface2)'" onmouseleave="this.style.background=''">
+        <div style="width:34px;height:34px;border-radius:10px;background:${cat.color}18;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0">${cat.emoji}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.name}</div>
+          <div style="display:flex;align-items:center;gap:6px;margin-top:2px">
+            <span style="font-size:10px;padding:2px 7px;border-radius:99px;background:${needsCat?'rgba(245,158,11,.15)':''+cat.color+'18'};color:${needsCat?'#f59e0b':cat.color};font-weight:600">${cat.emoji} ${cat.name}</span>
+            ${needsCat ? '<span style="font-size:10px;color:#f59e0b;font-weight:700">← toca para clasificar</span>' : ''}
+          </div>
+        </div>
+        <div style="font-family:var(--font-mono);font-size:13px;font-weight:500;color:${pos?'var(--green)':'var(--text)'}; flex-shrink:0">${pos?'+':''}${fmt(Math.abs(t.amount))}</div>
+      </div>`;
+    }).join('');
+    return `<div style="margin-bottom:4px">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);padding:10px 0 4px">${dateStr}</div>
+      ${rows}
+    </div>`;
+  }).join('');
+
+  // sidebar balance
+  document.getElementById('sb-balance').textContent = fmtShort(11303.05);
+}
+
+function renderDonut(txns) {
+  const gastos = txns.filter(t => t.amount < 0 && t.category !== 'ingreso');
+  const byCat = {};
+  gastos.forEach(t => {
+    byCat[t.category] = (byCat[t.category] || 0) + Math.abs(t.amount);
+  });
+  const total = Object.values(byCat).reduce((s,v) => s+v, 0) || 1;
+  const sorted = Object.entries(byCat).sort((a,b) => b[1]-a[1]).slice(0,7);
+
+  const svg = document.getElementById('donut-svg');
+  const cx=70, cy=70, r=55, r2=35;
+  let angle = -Math.PI/2;
+  let paths = '';
+  sorted.forEach(([catId, val]) => {
+    const cat = getCat(catId);
+    const sweep = (val/total) * 2 * Math.PI;
+    const x1 = cx + r*Math.cos(angle), y1 = cy + r*Math.sin(angle);
+    const x2 = cx + r*Math.cos(angle+sweep), y2 = cy + r*Math.sin(angle+sweep);
+    const ix1 = cx + r2*Math.cos(angle), iy1 = cy + r2*Math.sin(angle);
+    const ix2 = cx + r2*Math.cos(angle+sweep), iy2 = cy + r2*Math.sin(angle+sweep);
+    const large = sweep > Math.PI ? 1 : 0;
+    paths += `<path d="M${x1},${y1} A${r},${r} 0 ${large} 1 ${x2},${y2} L${ix2},${iy2} A${r2},${r2} 0 ${large} 0 ${ix1},${iy1}Z" fill="${cat.color}" opacity=".85"/>`;
+    angle += sweep;
+  });
+  svg.innerHTML = paths;
+  document.getElementById('donut-total').textContent = fmtShort(total);
+
+  const legend = document.getElementById('donut-legend');
+  legend.innerHTML = sorted.map(([catId, val]) => {
+    const cat = getCat(catId);
+    const pct = ((val/total)*100).toFixed(1);
+    return `<div class="legend-item">
+      <div class="legend-dot" style="background:${cat.color}"></div>
+      <div class="legend-name">${cat.emoji} ${cat.name}</div>
+      <div class="legend-amt">${fmtShort(val)}</div>
+      <div class="legend-pct">${pct}%</div>
+    </div>`;
+  }).join('');
+}
+
+function renderAlerts() {
+  const alerts = [];
+  const now = new Date();
+  const thisMonth = transactions.filter(t => {
+    const m = t.date.getMonth(), y = t.date.getFullYear();
+    return m === now.getMonth() && y === now.getFullYear() && t.amount < 0;
+  });
+
+  limits.forEach(lim => {
+    const spent = thisMonth.filter(t => t.category === lim.catId).reduce((s,t) => s+Math.abs(t.amount),0);
+    const pct = spent/lim.amount;
+    if (pct >= 1) alerts.push({ type:'err', msg: `⛔ Límite superado en ${getCat(lim.catId).name}: ${fmt(spent)} / ${fmt(lim.amount)}` });
+    else if (pct >= .8) alerts.push({ type:'warn', msg: `⚠️ Cerca del límite en ${getCat(lim.catId).name}: ${fmt(spent)} / ${fmt(lim.amount)} (${Math.round(pct*100)}%)` });
+  });
+
+  const el = document.getElementById('dash-alerts');
+  const uncatTxns = transactions.filter(t => t.category === 'sin_cat' && t.amount < 0);
+  let extra = '';
+  if (uncatTxns.length > 0) {
+    const uncatAmt = uncatTxns.reduce((s,t) => s+Math.abs(t.amount), 0);
+    extra = `<div onclick="go('movimientos')" style="background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:12px;padding:12px 16px;margin-bottom:8px;cursor:pointer;display:flex;gap:10px;align-items:flex-start">
+      <span style="font-size:18px;flex-shrink:0">❓</span>
+      <div>
+        <div style="font-weight:600;color:#f59e0b;font-size:13px">${uncatTxns.length} Bizum${uncatTxns.length>1?'s':''} sin clasificar — ${fmt(uncatAmt)} en total</div>
+        <div style="color:var(--muted);font-size:12px;margin-top:2px">Cada Bizum enviado puede ser de un restaurante, regalo, compra… Tócalos aquí para asignar categoría y tener estadísticas reales.</div>
+      </div>
+    </div>`;
+  }
+  el.innerHTML = extra + alerts.map(a => `<div class="alert alert-${a.type}">${a.msg}</div>`).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  MOVIMIENTOS
+// ═══════════════════════════════════════════════════════════════════
+
+function txnHTML(t, showActions=false) {
+  const cat = getCat(t.category);
+  const amt = t.amount;
+  const isPos = amt > 0;
+  const needsCat = t.category === 'sin_cat';
+  return `<tr class="txn-row${needsCat?' txn-uncat':''}" onclick="openEditTxn(${t.id})" style="${needsCat?'background:rgba(245,158,11,.04);':''}" >
+    <td style="font-family:var(--font-mono);font-size:12px;color:var(--muted)">${dateLabel(t.date)}</td>
+    <td>
+      <div style="font-weight:500;font-size:13px">${t.name}</div>
+      ${t.note ? `<div style="font-size:11px;color:var(--muted)">${t.note}</div>` : ''}
+      ${needsCat ? '<div style="font-size:10px;color:#f59e0b;margin-top:2px;font-weight:600">⚠️ Sin clasificar — toca para editar</div>' : ''}
+    </td>
+    <td><span class="cat-chip" style="background:${cat.color}22;color:${cat.color}">${cat.emoji} ${cat.name}</span></td>
+    <td style="text-align:right;font-family:var(--font-mono);font-weight:500;color:${isPos ? 'var(--green)' : 'var(--text)'}">${isPos?'+':''}${fmt(Math.abs(amt))}</td>
+    <td><button class="btn btn-secondary btn-sm btn-icon" onclick="event.stopPropagation();openEditTxn(${t.id})">✏️</button></td>
+  </tr>`;
+}
+
+function renderMovimientos() {
+  populateModalSelects();
+  const search = document.getElementById('txn-search').value.toLowerCase();
+  const cat = document.getElementById('txn-cat-filter').value;
+  const type = document.getElementById('txn-type-filter').value;
+  const month = document.getElementById('txn-month-filter').value;
+
+  let filtered = transactions;
+  if (search) filtered = filtered.filter(t => t.name.toLowerCase().includes(search) || t.note.toLowerCase().includes(search));
+  if (cat) filtered = filtered.filter(t => t.category === cat);
+  if (type === 'gasto') filtered = filtered.filter(t => t.amount < 0);
+  if (type === 'ingreso') filtered = filtered.filter(t => t.amount > 0);
+  if (type === 'sin_cat') filtered = filtered.filter(t => t.category === 'sin_cat');
+  if (month) filtered = filtered.filter(t => monthKey(t.date) === month);
+
+  const total = filtered.length;
+  const pages = Math.ceil(total / TXN_PER_PAGE);
+  if (txnPage >= pages) txnPage = 0;
+  const slice = filtered.slice(txnPage * TXN_PER_PAGE, (txnPage+1) * TXN_PER_PAGE);
+
+  document.getElementById('txn-tbody').innerHTML = slice.map(t => txnHTML(t, true)).join('');
+
+  // Pagination
+  const pg = document.getElementById('txn-pagination');
+  pg.innerHTML = '';
+  for (let i=0; i<pages; i++) {
+    const b = document.createElement('button');
+    b.className = 'btn btn-secondary btn-sm' + (i===txnPage?' btn-primary':'');
+    b.textContent = i+1;
+    b.onclick = () => { txnPage = i; renderMovimientos(); };
+    pg.appendChild(b);
+  }
+}
+
+function openEditTxn(id) {
+  const t = transactions.find(x => x.id === id);
+  if (!t) return;
+  editingIdx = id;
+  populateModalSelects();
+  const cat = getCat(t.category);
+  document.getElementById('edit-txn-info').innerHTML = `
+    <div style="font-weight:600;margin-bottom:4px">${t.name}</div>
+    <div style="display:flex;gap:16px">
+      <span style="color:var(--muted);font-size:12px">${dateLabel(t.date)}</span>
+      <span style="font-family:var(--font-mono);color:${t.amount>0?'var(--green)':'var(--red)'}">${t.amount>0?'+':''}${fmt(Math.abs(t.amount))}</span>
+    </div>`;
+  document.getElementById('edit-txn-cat').value = t.category;
+  document.getElementById('edit-txn-note').value = t.note || '';
+  setImpulsivo(!!t.impulsivo);
+  openModal('modal-edit-txn');
+}
+
+function saveEditTxn() {
+  const t = transactions.find(x => x.id === editingIdx);
+  if (!t) return;
+  t.category = document.getElementById('edit-txn-cat').value;
+  t.note = document.getElementById('edit-txn-note').value;
+  closeModal('modal-edit-txn');
+  renderMovimientos();
+  renderDashboard();
+}
+
+function deleteEditTxn() {
+  if (!confirm('¿Eliminar este movimiento?')) return;
+  transactions = transactions.filter(t => t.id !== editingIdx);
+  closeModal('modal-edit-txn');
+  renderMovimientos();
+  renderDashboard();
+}
+
+function addManualTxn() {
+  const name = document.getElementById('new-txn-name').value;
+  const amount = parseFloat(document.getElementById('new-txn-amount').value);
+  const dateVal = document.getElementById('new-txn-date').value;
+  const category = document.getElementById('new-txn-cat').value;
+  if (!name || isNaN(amount) || !dateVal) return alert('Rellena todos los campos');
+  const date = new Date(dateVal);
+  const id = Date.now();
+  transactions.unshift({ id, name, date, amount, category, note:'', manual:true });
+  closeModal('modal-add-txn');
+  renderMovimientos();
+  renderDashboard();
+}
+
+function exportCSV() {
+  const rows = [['Fecha','Concepto','Categoría','Importe','Nota']];
+  transactions.forEach(t => {
+    rows.push([dateLabel(t.date), t.name, getCat(t.category).name, t.amount, t.note]);
+  });
+  const csv = rows.map(r => r.join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = 'movimientos_paula.csv';
+  a.click();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  CATEGORÍAS
+// ═══════════════════════════════════════════════════════════════════
+
+function renderCategorias() {
+  const area = document.getElementById('cat-cards-area');
+  const now = new Date();
+  const thisMonth = transactions.filter(t => {
+    return t.date.getMonth() === now.getMonth() && t.date.getFullYear() === now.getFullYear() && t.amount < 0;
+  });
+
+  area.innerHTML = categories.map((cat,i) => {
+    const total = thisMonth.filter(t => t.category === cat.id).reduce((s,t) => s+Math.abs(t.amount),0);
+    const count = thisMonth.filter(t => t.category === cat.id).length;
+    return `<div class="card saving-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div style="font-size:28px">${cat.emoji}</div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-secondary btn-sm btn-icon" onclick="editCategory(${i})" title="Editar">✏️</button>
+          ${i >= 3 ? `<button class="btn btn-danger btn-sm btn-icon" onclick="deleteCategory(${i})">🗑</button>` : ''}
+        </div>
+      </div>
+      <div style="font-weight:600;font-size:14px">${cat.name}</div>
+      <div style="font-family:var(--font-mono);font-size:20px;color:${cat.color};margin:6px 0">${fmt(total)}</div>
+      <div style="font-size:12px;color:var(--muted)">${count} mov. este mes</div>
+      <div style="margin-top:10px;font-size:10px;color:var(--muted)">${cat.keywords.slice(0,3).join(' · ')}</div>
+    </div>`;
+  }).join('');
+}
+
+function addCategory() {
+  const name = document.getElementById('new-cat-name').value.trim();
+  const emoji = document.getElementById('new-cat-emoji').value.trim() || '📦';
+  const color = document.getElementById('new-cat-color').value;
+  const kwRaw = document.getElementById('new-cat-keywords').value;
+  const keywords = kwRaw.split(',').map(k => k.trim()).filter(Boolean);
+  if (!name) return;
+  const id = name.toLowerCase().replace(/\s+/g,'_') + '_' + Date.now();
+  categories.splice(categories.length-1, 0, { id, name, emoji, color, keywords });
+  // Re-classify transactions
+  transactions.forEach(t => {
+    if (t.category === 'otros' || t.category === '') {
+      t.category = autoCategory(t.name, t.amount);
+    }
+  });
+  closeModal('modal-add-cat');
+  renderCategorias();
+  populateMonthFilter();
+}
+
+function deleteCategory(i) {
+  if (!confirm('¿Eliminar categoría? Los movimientos pasarán a "Otros"')) return;
+  const cat = categories[i];
+  transactions.forEach(t => { if (t.category === cat.id) t.category = 'otros'; });
+  categories.splice(i,1);
+  renderCategorias();
+}
+
+function editCategory(i) {
+  const cat = categories[i];
+  document.getElementById('new-cat-name').value = cat.name;
+  document.getElementById('new-cat-emoji').value = cat.emoji;
+  document.getElementById('new-cat-color').value = cat.color;
+  document.getElementById('new-cat-keywords').value = cat.keywords.join(', ');
+  openModal('modal-add-cat');
+  // Override button
+  document.querySelector('#modal-add-cat .btn-primary').onclick = () => {
+    cat.name = document.getElementById('new-cat-name').value.trim() || cat.name;
+    cat.emoji = document.getElementById('new-cat-emoji').value.trim() || cat.emoji;
+    cat.color = document.getElementById('new-cat-color').value;
+    cat.keywords = document.getElementById('new-cat-keywords').value.split(',').map(k=>k.trim()).filter(Boolean);
+    // re-apply keywords
+    transactions.forEach(t => { t.category = autoCategory(t.name, t.amount); });
+    closeModal('modal-add-cat');
+    renderCategorias();
+    document.querySelector('#modal-add-cat .btn-primary').onclick = addCategory;
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  GASTOS FIJOS
+// ═══════════════════════════════════════════════════════════════════
+
+function renderFijos() {
+  const area = document.getElementById('fijos-cards-area');
+  const _freqLbls = {1:'cada mes',2:'cada 2 meses',3:'cada trimestre',6:'cada semestre',12:'cada año'};
+  area.innerHTML = fixedExpenses.map((f,i) => {
+    const freq = f.freq || 1;
+    const monthlyEq = f.amount / freq;
+    return `<div class="card saving-card">
+      <div style="display:flex;justify-content:space-between;margin-bottom:12px">
+        <div style="font-size:28px">${f.emoji || '📌'}</div>
+        <button class="btn btn-danger btn-sm btn-icon" onclick="deleteFijo(${i})">🗑</button>
+      </div>
+      <div style="font-weight:600">${f.name}</div>
+      ${f.traspaso ? '<div style="font-size:10px;color:var(--muted);margin-top:2px">🔄 Traspaso interno (no es un gasto real)</div>' : ''}
+      <div style="font-family:var(--font-mono);font-size:22px;color:${f.traspaso?'var(--muted)':'var(--red)'};margin:6px 0">${fmt(f.amount)}</div>
+      <div style="font-size:12px;color:var(--muted)">Día ${f.day} · ${_freqLbls[freq] || 'cada '+freq+' meses'}</div>
+      ${freq > 1 ? '<div style="font-size:11px;color:var(--yellow);margin-top:3px">≈ ' + fmt(monthlyEq) + '/mes de media</div>' : ''}
+    </div>`;
+  }).join('');
+
+  // Monthly equivalent: divide each fixed expense by its frequency
+  const total = fixedExpenses.filter(f => !f.traspaso).reduce((s,f) => s + f.amount / (f.freq || 1), 0);
+  const totalAll = fixedExpenses.reduce((s,f) => s + f.amount / (f.freq || 1), 0);
+  document.getElementById('fijos-total').textContent = fmt(total);
+
+  // Detect from transactions
+  const alerts = document.getElementById('fijos-alerts');
+  const detected = detectFixedExpenses();
+  if (detected.length > 0 && fixedExpenses.length === 0) {
+    alerts.innerHTML = `<div class="alert alert-warn">
+      💡 Detectamos ${detected.length} posibles gastos fijos en tu historial.
+      ${detected.map(d => `<br>· <b>${d.name}</b>: ~${fmt(d.avg)}/mes`).join('')}
+    </div>`;
+  } else {
+    alerts.innerHTML = '';
+  }
+}
+
+function detectFixedExpenses() {
+  const byName = {};
+  transactions.filter(t=>t.amount<0).forEach(t => {
+    const k = t.name.toLowerCase();
+    if (!byName[k]) byName[k] = [];
+    byName[k].push({ date: t.date, amount: Math.abs(t.amount) });
+  });
+  const fixed = [];
+  Object.entries(byName).forEach(([name, txns]) => {
+    if (txns.length >= 3) {
+      const avg = txns.reduce((s,t)=>s+t.amount,0)/txns.length;
+      const variance = txns.map(t=>Math.abs(t.amount-avg)).reduce((s,v)=>s+v,0)/txns.length;
+      if (variance < avg * 0.15) { // low variance = fixed
+        fixed.push({ name, avg, count: txns.length });
+      }
+    }
+  });
+  return fixed.sort((a,b)=>b.avg-a.avg).slice(0,8);
+}
+
+function addFijo() {
+  const name = document.getElementById('fijo-name').value.trim();
+  const amount = parseFloat(document.getElementById('fijo-amount').value);
+  const day = parseInt(document.getElementById('fijo-day').value) || 1;
+  const freq = parseInt((document.getElementById('fijo-freq') || {value:'1'}).value) || 1;
+  const catId = document.getElementById('fijo-cat').value;
+  const emoji = document.getElementById('fijo-emoji').value.trim() || '📌';
+  const traspEl = document.getElementById('fijo-traspaso');
+  const traspaso = traspEl ? traspEl.value === '1' : false;
+  if (!name || isNaN(amount)) return;
+  fixedExpenses.push({ name, amount, day, freq, catId, emoji, traspaso });
+  closeModal('modal-add-fijo');
+  renderFijos();
+}
+
+function deleteFijo(i) {
+  fixedExpenses.splice(i,1);
+  renderFijos();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  LÍMITES
+// ═══════════════════════════════════════════════════════════════════
+
+function renderLimites() {
+  const area = document.getElementById('limites-area');
+  const now = new Date();
+  const thisMonth = transactions.filter(t => {
+    return t.date.getMonth() === now.getMonth() && t.date.getFullYear() === now.getFullYear() && t.amount < 0;
+  });
+
+  // Info box always shown at top
+  const infoBox = `<div style="background:rgba(96,165,250,.08);border:1px solid rgba(96,165,250,.2);border-radius:12px;padding:14px 16px;margin-bottom:16px;font-size:13px;color:var(--text);line-height:1.6">
+    <strong>💡 ¿Cómo funcionan los límites?</strong><br>
+    Un límite es el máximo que quieres gastarte en una categoría <strong>durante el mes actual</strong>. 
+    La app suma automáticamente todo lo que gastas en esa categoría a lo largo del mes, 
+    y cuando te acercas al tope te avisa. <strong>El 1 de cada mes el contador se pone a cero solo.</strong>
+  </div>`;
+
+  if (limits.length === 0) {
+    area.innerHTML = infoBox + `<div class="card" style="text-align:center;padding:40px;color:var(--muted)">
+      <div style="font-size:40px;margin-bottom:12px">🚦</div>
+      <div style="font-weight:600;margin-bottom:8px">No tienes límites definidos todavía</div>
+      <div style="font-size:12px">Añade un límite para que la app te avise cuando te acerques al tope mensual en una categoría.</div>
+    </div>`;
+    return;
+  }
+  area.innerHTML = infoBox + area.innerHTML;
+
+  const _infoBox = `<div style="background:rgba(96,165,250,.08);border:1px solid rgba(96,165,250,.2);border-radius:12px;padding:14px 16px;margin-bottom:16px;font-size:13px;color:var(--text);line-height:1.6">
+    <strong>💡 ¿Cómo funcionan los límites?</strong> Un límite es el máximo que quieres gastarte en una categoría <strong>durante el mes actual</strong>. 
+    La app va sumando todo lo que gastas en esa categoría a lo largo del mes, y cuando te acercas al tope te avisa. 
+    <strong>El 1 de cada mes el contador se reinicia a cero automáticamente.</strong>
+  </div>`;
+  area.innerHTML = _infoBox + `<div class="grid grid-2">${limits.map((lim,i) => {
+    const cat = getCat(lim.catId);
+    const spent = thisMonth.filter(t => t.category === lim.catId).reduce((s,t) => s+Math.abs(t.amount),0);
+    const pct = Math.min(1, spent/lim.amount);
+    const color = pct >= 1 ? 'var(--red)' : pct >= .8 ? 'var(--yellow)' : 'var(--green)';
+    const status = pct >= 1 ? '🔴 Superado' : pct >= .8 ? '🟡 Atención' : '🟢 OK';
+    return `<div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div style="font-size:22px">${cat.emoji}</div>
+        <span class="badge" style="background:${color}22;color:${color}">${status}</span>
+        <button class="btn btn-danger btn-sm btn-icon" onclick="deleteLimite(${i})">🗑</button>
+      </div>
+      <div style="font-weight:600;margin-bottom:4px">${cat.name}</div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+        <span style="font-family:var(--font-mono);color:${color}">${fmt(spent)}</span>
+        <span style="font-family:var(--font-mono);color:var(--muted)">/ ${fmt(lim.amount)}</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" style="width:${pct*100}%;background:${color}"></div>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:6px">${Math.round(pct*100)}% usado este mes · te quedan <b>${fmt(Math.max(0, lim.amount - spent))}</b> hasta el ${new Date(now.getFullYear(), now.getMonth()+1, 0).getDate()} de este mes</div>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+function addLimite() {
+  const catId = document.getElementById('limite-cat').value;
+  const amount = parseFloat(document.getElementById('limite-amount').value);
+  if (!catId || isNaN(amount) || amount <= 0) return;
+  limits = limits.filter(l => l.catId !== catId); // one per category
+  limits.push({ catId, amount });
+  closeModal('modal-add-limite');
+  renderLimites();
+}
+
+function deleteLimite(i) {
+  limits.splice(i,1);
+  renderLimites();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  AHORRO
+// ═══════════════════════════════════════════════════════════════════
+
+function renderAhorro() {
+  const area = document.getElementById('ahorro-cards');
+  area.innerHTML = savingGoals.length === 0
+    ? `<div class="card" style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted)">
+        <div style="font-size:40px;margin-bottom:12px">🏦</div>
+        <div>Sin metas de ahorro. ¡Crea la primera!</div>
+      </div>`
+    : savingGoals.map((g,i) => {
+      const pct = Math.min(1, g.current/g.goal);
+      const remaining = g.goal - g.current;
+      // Estimate months to goal based on avg monthly saving
+      const months12 = filterPeriod(transactions, 12);
+      const ingresos12 = months12.filter(t=>t.amount>0).reduce((s,t)=>s+t.amount,0);
+      const gastos12 = months12.filter(t=>t.amount<0).reduce((s,t)=>s+Math.abs(t.amount),0);
+      const monthlySave = (ingresos12 - gastos12) / 12;
+      const monthsLeft = monthlySave > 0 ? Math.ceil(remaining/monthlySave) : '∞';
+      return `<div class="card saving-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+          <div style="font-size:30px">${g.emoji}</div>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-secondary btn-sm btn-icon" onclick="addToMeta(${i})">+</button>
+            <button class="btn btn-danger btn-sm btn-icon" onclick="deleteMeta(${i})">🗑</button>
+          </div>
+        </div>
+        <div style="font-weight:600;font-size:15px">${g.name}</div>
+        <div style="font-family:var(--font-mono);font-size:20px;margin:8px 0">
+          <span style="color:${g.color}">${fmt(g.current)}</span>
+          <span style="color:var(--muted);font-size:14px"> / ${fmt(g.goal)}</span>
+        </div>
+        <div class="progress-track" style="height:10px;margin-bottom:8px">
+          <div class="progress-fill" style="width:${pct*100}%;background:${g.color}"></div>
+        </div>
+        <div style="font-size:12px;color:var(--muted)">
+          ${Math.round(pct*100)}% · Faltan ${fmt(remaining)} · ~${monthsLeft} mes${monthsLeft===1?'':'es'}
+        </div>
+      </div>`;
+    }).join('');
+
+  // Saving tips
+  const tips = document.getElementById('saving-tips');
+  const byCat = {};
+  filterPeriod(transactions, 3).filter(t=>t.amount<0).forEach(t => {
+    byCat[t.category] = (byCat[t.category]||0) + Math.abs(t.amount);
+  });
+  const sorted = Object.entries(byCat).sort((a,b)=>b[1]-a[1]);
+  tips.innerHTML = sorted.slice(0,4).map(([catId,total]) => {
+    const cat = getCat(catId);
+    const monthly = total/3;
+    const save10 = monthly * 0.1;
+    return `<div class="pred-item">
+      <div>${cat.emoji} Si reduces <b>${cat.name}</b> un 10%</div>
+      <div style="font-family:var(--font-mono);color:var(--green)">+${fmt(save10)}/mes</div>
+    </div>`;
+  }).join('');
+}
+
+function addMeta() {
+  const name = document.getElementById('meta-name').value.trim();
+  const goal = parseFloat(document.getElementById('meta-goal').value);
+  const current = parseFloat(document.getElementById('meta-current').value)||0;
+  const emoji = document.getElementById('meta-emoji').value.trim() || '🎯';
+  const color = document.getElementById('meta-color').value;
+  if (!name || isNaN(goal)) return;
+  savingGoals.push({ name, goal, current, emoji, color });
+  closeModal('modal-add-meta');
+  renderAhorro();
+}
+
+function deleteMeta(i) {
+  savingGoals.splice(i,1);
+  renderAhorro();
+}
+
+function addToMeta(i) {
+  const amount = parseFloat(prompt('¿Cuánto añadir a la meta?'));
+  if (isNaN(amount)) return;
+  savingGoals[i].current = Math.min(savingGoals[i].goal, savingGoals[i].current + amount);
+  renderAhorro();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  PREDICCIÓN
+// ═══════════════════════════════════════════════════════════════════
+
+function renderPrediccion() {
+  // Average by category from last 3 months
+  const txns3 = filterPeriod(transactions, 3).filter(t=>t.amount<0);
+  const byCat = {};
+  txns3.forEach(t => {
+    byCat[t.category] = (byCat[t.category]||0) + Math.abs(t.amount);
+  });
+  const avgByCat = {};
+  Object.entries(byCat).forEach(([k,v]) => avgByCat[k] = v/3);
+
+  // 30-day prediction
+  const pred30 = document.getElementById('pred-30-list');
+  const sorted = Object.entries(avgByCat).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  pred30.innerHTML = sorted.map(([catId, avg]) => {
+    const cat = getCat(catId);
+    return `<div class="pred-item">
+      <div>${cat.emoji} ${cat.name}</div>
+      <div style="font-family:var(--font-mono);color:var(--text)">${fmt(avg)}</div>
+    </div>`;
+  }).join('');
+
+  // Annual
+  const totalMonthly = Object.values(avgByCat).reduce((s,v)=>s+v,0);
+  const annual = totalMonthly * 12;
+  const fixedMonthly = fixedExpenses.reduce((s,f)=>s+f.amount,0);
+
+  document.getElementById('pred-anual').innerHTML = `
+    <div class="pred-item"><div>Gasto variable proyectado</div><div style="font-family:var(--font-mono);color:var(--red)">${fmt(annual)}</div></div>
+    <div class="pred-item"><div>Gastos fijos anuales</div><div style="font-family:var(--font-mono);color:var(--red)">${fmt(fixedMonthly*12)}</div></div>
+    <div class="pred-item" style="border-top:1px solid var(--accent);padding-top:12px">
+      <div><b>Total proyectado anual</b></div>
+      <div style="font-family:var(--font-mono);color:var(--red);font-size:18px">${fmt(annual+fixedMonthly*12)}</div>
+    </div>`;
+
+  // Simulator categories
+  populateModalSelects();
+  document.getElementById('sim-cat').innerHTML = sorted.map(([catId]) => {
+    const cat = getCat(catId);
+    return `<option value="${catId}">${cat.emoji} ${cat.name}</option>`;
+  }).join('');
+}
+
+function runSimulator() {
+  const catId = document.getElementById('sim-cat').value;
+  const pct = parseFloat(document.getElementById('sim-pct').value)||20;
+  const txns3 = filterPeriod(transactions, 3).filter(t=>t.amount<0&&t.category===catId);
+  const monthly = txns3.reduce((s,t)=>s+Math.abs(t.amount),0)/3;
+  const saved = monthly * (pct/100);
+  const savedYear = saved * 12;
+  const cat = getCat(catId);
+  document.getElementById('sim-result').innerHTML = `
+    <div class="alert alert-ok">
+      💡 Reduciendo ${cat.emoji} ${cat.name} un <b>${pct}%</b>:<br>
+      Ahorras <b>${fmt(saved)}/mes</b> → <b>${fmt(savedYear)}/año</b>
+    </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  ANÁLISIS
+// ═══════════════════════════════════════════════════════════════════
+
+function switchAnalTab(el, id) {
+  document.querySelectorAll('.an-tab').forEach(t => t.style.display='none');
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById(id).style.display='block';
+}
+
+function renderAnalisis() {
+  renderSaldoChart();
+  renderDiasChart();
+  renderTopTable();
+  renderComparativaChart();
+}
+
+function svgBarChart(data, color, height=150) {
+  const max = Math.max(...data.map(d=>d.val), 1);
+  const w = 100 / data.length;
+  const bars = data.map((d,i) => {
+    const h = (d.val/max) * (height-30);
+    const x = i*w + w*0.1;
+    const bw = w*0.8;
+    return `
+      <rect x="${x}%" y="${height-30-h}" width="${bw}%" height="${h}" fill="${color}" rx="2" opacity=".8"/>
+      <text x="${x+bw/2}%" y="${height-12}" text-anchor="middle" fill="#8a8499" font-size="9">${d.label}</text>
+      ${d.val > 0 ? `<text x="${x+bw/2}%" y="${height-30-h-3}" text-anchor="middle" fill="#f0edf8" font-size="8">${fmtShort(d.val)}</text>` : ''}`;
+  }).join('');
+  return `<svg width="100%" height="${height}" style="overflow:visible">${bars}</svg>`;
+}
+
+function renderSaldoChart() {
+  // Balance evolution by month
+  const byMonth = {};
+  transactions.filter(t=>t.amount<0).forEach(t => {
+    const k = monthKey(t.date);
+    if (!byMonth[k]) byMonth[k] = { gasto:0, ingreso:0 };
+    byMonth[k].gasto += Math.abs(t.amount);
+  });
+  transactions.filter(t=>t.amount>0).forEach(t => {
+    const k = monthKey(t.date);
+    if (!byMonth[k]) byMonth[k] = { gasto:0, ingreso:0 };
+    byMonth[k].ingreso += t.amount;
+  });
+  const keys = Object.keys(byMonth).sort().slice(-18);
+  const data = keys.map(k => ({ label: monthLabel(k), val: byMonth[k].gasto }));
+  document.getElementById('saldo-chart').innerHTML = svgBarChart(data, 'var(--red)', 160);
+}
+
+function renderDiasChart() {
+  const days = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+  const totals = [0,0,0,0,0,0,0];
+  const counts = [0,0,0,0,0,0,0];
+  transactions.filter(t=>t.amount<0).forEach(t => {
+    const d = t.date.getDay();
+    totals[d] += Math.abs(t.amount);
+    counts[d]++;
+  });
+  const data = days.map((label,i) => ({ label, val: counts[i] ? totals[i]/counts[i] : 0 }));
+  document.getElementById('dias-chart').innerHTML = svgBarChart(data, 'var(--accent2)', 160);
+}
+
+function renderTopTable() {
+  const byMerchant = {};
+  transactions.filter(t=>t.amount<0 && t.category!=='ingreso').forEach(t => {
+    if (!byMerchant[t.name]) byMerchant[t.name] = { total:0, count:0 };
+    byMerchant[t.name].total += Math.abs(t.amount);
+    byMerchant[t.name].count++;
+  });
+  const sorted = Object.entries(byMerchant).sort((a,b)=>b[1].total-a[1].total).slice(0,20);
+  document.getElementById('top-tbody').innerHTML = sorted.map(([name, d], i) =>
+    `<tr>
+      <td style="color:var(--muted);font-family:var(--font-mono)">${i+1}</td>
+      <td style="font-weight:500">${name}</td>
+      <td style="font-family:var(--font-mono)">${d.count}</td>
+      <td style="text-align:right;font-family:var(--font-mono);color:var(--red)">${fmt(d.total)}</td>
+      <td style="text-align:right;font-family:var(--font-mono);color:var(--muted)">${fmt(d.total/d.count)}</td>
+    </tr>`).join('');
+}
+
+function renderComparativaChart() {
+  const byMonth = {};
+  transactions.filter(t=>t.amount<0).forEach(t => {
+    const k = monthKey(t.date);
+    byMonth[k] = (byMonth[k]||0) + Math.abs(t.amount);
+  });
+  const keys = Object.keys(byMonth).sort().slice(-12);
+  const data = keys.map(k => ({ label: monthLabel(k), val: byMonth[k] }));
+  document.getElementById('comp-chart').innerHTML = svgBarChart(data, 'var(--accent)', 160);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  PATRIMONIO
+// ═══════════════════════════════════════════════════════════════════
+
+let cuentas = [];
+
+function initDefaultCuentas() {
+  cuentas = [
+    { id: 1, name: 'imagin (cuenta principal)', saldo: 11303.05, tipo: 'corriente', rent: 0, emoji: '💜', traspaso: false },
+    { id: 2, name: 'Cuenta de ahorro', saldo: 3000.00, tipo: 'ahorro', rent: 0.85, emoji: '🏦', traspaso: false },
+    { id: 3, name: 'Revolut', saldo: 0, tipo: 'corriente', rent: 0, emoji: '🔄', traspaso: true },
+  ];
+}
+
+function addCuenta() {
+  const name = document.getElementById('cuenta-name').value.trim();
+  const saldo = parseFloat(document.getElementById('cuenta-saldo').value) || 0;
+  const tipo = document.getElementById('cuenta-tipo').value;
+  const rent = parseFloat(document.getElementById('cuenta-rent').value) || 0;
+  const emoji = document.getElementById('cuenta-emoji').value.trim() || '💰';
+  const traspaso = document.getElementById('cuenta-traspaso').value === '1';
+  if (!name) return;
+  cuentas.push({ id: Date.now(), name, saldo, tipo, rent, emoji, traspaso });
+  closeModal('modal-add-cuenta');
+  renderPatrimonio();
+}
+
+function deleteCuenta(id) {
+  cuentas = cuentas.filter(c => c.id !== id);
+  renderPatrimonio();
+}
+
+function updateSaldo(id) {
+  const c = cuentas.find(x => x.id === id);
+  if (!c) return;
+  const val = parseFloat(prompt(`Nuevo saldo para "${c.name}" (€):`, c.saldo));
+  if (!isNaN(val)) { c.saldo = val; renderPatrimonio(); }
+}
+
+function renderPatrimonio() {
+  const real = cuentas.filter(c => !c.traspaso);
+  const total = real.reduce((s, c) => s + c.saldo, 0);
+  const totalAll = cuentas.reduce((s, c) => s + c.saldo, 0);
+
+  document.getElementById('pat-total').textContent = fmt(total);
+
+  // Emergency fund: based on avg monthly spending
+  const txns3 = filterPeriod(transactions, 3).filter(t => t.amount < 0 && t.category !== 'traspaso');
+  const avgMonthlySpend = txns3.reduce((s,t) => s + Math.abs(t.amount), 0) / 3;
+  const emergencyMonths = avgMonthlySpend > 0 ? (total / avgMonthlySpend) : 0;
+  const emColor = emergencyMonths >= 6 ? 'var(--green)' : emergencyMonths >= 3 ? 'var(--yellow)' : 'var(--red)';
+  document.getElementById('pat-emergency-val').style.color = emColor;
+  document.getElementById('pat-emergency-val').textContent = emergencyMonths.toFixed(1) + ' meses';
+  document.getElementById('pat-emergency-label').textContent = `de fondo de emergencia (gasto medio: ${fmt(avgMonthlySpend)}/mes)`;
+  document.getElementById('pat-subtitle').textContent =
+    `${cuentas.filter(c=>!c.traspaso).length} cuentas reales · ${emergencyMonths >= 6 ? '✅ Fondo de emergencia sólido' : emergencyMonths >= 3 ? '⚠️ Fondo de emergencia justo' : '🔴 Fondo de emergencia insuficiente'}`;
+
+  // CUENTAS CARDS
+  const tipoColors = { corriente: 'var(--accent2)', ahorro: 'var(--green)', inversion: 'var(--accent)', efectivo: 'var(--yellow)', otro: 'var(--muted)' };
+  document.getElementById('pat-cuentas').innerHTML = cuentas.map(c => {
+    const color = c.traspaso ? 'var(--muted)' : tipoColors[c.tipo] || 'var(--muted)';
+    const rentAnual = c.saldo * (c.rent / 100);
+    const rentDia = rentAnual / 365;
+    return `<div class="card saving-card" style="${c.traspaso ? 'opacity:.85' : ''}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+        <div style="font-size:28px">${c.emoji}</div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-secondary btn-sm btn-icon" onclick="updateSaldo(${c.id})" title="Actualizar saldo">✏️</button>
+          <button class="btn btn-danger btn-sm btn-icon" onclick="deleteCuenta(${c.id})">🗑</button>
+        </div>
+      </div>
+      <div style="font-weight:600;font-size:13px">${c.name}</div>
+      ${c.traspaso ? '<div style="font-size:10px;color:var(--muted);margin-top:2px">🔄 Cuenta puente</div>' : ''}
+      <div style="font-family:var(--font-mono);font-size:24px;color:${color};margin:8px 0">${fmt(c.saldo)}</div>
+      ${c.presupuesto ? `<div style="font-size:12px;color:var(--yellow)">⚠️ Tope: ${fmt(c.presupuesto)}/mes</div>` : ''}
+      ${c.rent > 0 ? `<div style="font-size:12px;color:var(--green)">📈 ${c.rent}% TAE · +${fmt(rentDia)}/día</div>` : ''}
+      <div style="font-size:11px;color:var(--muted);margin-top:4px;text-transform:capitalize">${c.tipo}</div>
+    </div>`;
+  }).join('');
+
+  // DONUT patrimonio
+  const svg = document.getElementById('pat-donut');
+  const legend = document.getElementById('pat-donut-legend');
+  const paleta = ['var(--accent)', 'var(--green)', 'var(--accent2)', 'var(--yellow)', 'var(--red)'];
+  const cx=60, cy=60, r=50, r2=30;
+  let angle = -Math.PI/2;
+  let paths = '';
+  cuentas.forEach((c, i) => {
+    const pct = totalAll > 0 ? c.saldo / totalAll : 0;
+    const sweep = pct * 2 * Math.PI;
+    const col = paleta[i % paleta.length];
+    const x1=cx+r*Math.cos(angle), y1=cy+r*Math.sin(angle);
+    const x2=cx+r*Math.cos(angle+sweep), y2=cy+r*Math.sin(angle+sweep);
+    const ix1=cx+r2*Math.cos(angle), iy1=cy+r2*Math.sin(angle);
+    const ix2=cx+r2*Math.cos(angle+sweep), iy2=cy+r2*Math.sin(angle+sweep);
+    const large = sweep > Math.PI ? 1 : 0;
+    if (sweep > 0.01) paths += `<path d="M${x1},${y1} A${r},${r} 0 ${large} 1 ${x2},${y2} L${ix2},${iy2} A${r2},${r2} 0 ${large} 0 ${ix1},${iy1}Z" fill="${col}" opacity="${c.traspaso ? '.4' : '.85'}"/>`;
+    angle += sweep;
+  });
+  svg.innerHTML = paths;
+  document.getElementById('pat-donut-total').textContent = fmtShort(totalAll);
+  legend.innerHTML = cuentas.map((c, i) => {
+    const col = paleta[i % paleta.length];
+    const pct = totalAll > 0 ? ((c.saldo/totalAll)*100).toFixed(1) : 0;
+    return `<div class="legend-item">
+      <div class="legend-dot" style="background:${col};${c.traspaso ? 'opacity:.5' : ''}"></div>
+      <div class="legend-name" style="${c.traspaso ? 'color:var(--muted)' : ''}">${c.emoji} ${c.name}</div>
+      <div class="legend-amt">${fmtShort(c.saldo)}</div>
+      <div class="legend-pct">${pct}%</div>
+    </div>`;
+  }).join('');
+
+  // TRASPASO ANALYSIS (este mes)
+  const now = new Date();
+  const thisMonthTxns = transactions.filter(t =>
+    t.date.getMonth() === now.getMonth() && t.date.getFullYear() === now.getFullYear()
+  );
+  const traspasos = thisMonthTxns.filter(t => t.category === 'traspaso' && t.amount < 0);
+  const gastosReales = thisMonthTxns.filter(t => t.amount < 0 && t.category !== 'traspaso' && t.category !== 'ingreso');
+  const totalTrasp = traspasos.reduce((s,t) => s + Math.abs(t.amount), 0);
+  const totalGastosR = gastosReales.reduce((s,t) => s + Math.abs(t.amount), 0);
+
+  document.getElementById('pat-traspaso-analysis').innerHTML = `
+    <div class="pred-item">
+      <div>🔄 Traspasos a Revolut</div>
+      <div style="font-family:var(--font-mono);color:var(--muted)">${fmt(totalTrasp)}</div>
+    </div>
+    <div class="pred-item">
+      <div>💸 Gastos reales directos</div>
+      <div style="font-family:var(--font-mono);color:var(--red)">${fmt(totalGastosR)}</div>
+    </div>
+    <div class="pred-item" style="border-top:1px solid var(--accent2)">
+      <div><b>Total movido este mes</b></div>
+      <div style="font-family:var(--font-mono);color:var(--text)">${fmt(totalTrasp + totalGastosR)}</div>
+    </div>
+    ${totalTrasp > 0 ? `<div class="alert alert-warn" style="margin-top:12px;font-size:12px">
+      💡 Los ${fmt(totalTrasp)} en traspasos a Revolut <b>no son gasto real</b>. Añade manualmente los gastos reales de Revolut (Claude, Spotify, compras grandes) para tener el análisis completo.
+    </div>` : ''}`;
+
+  // RENTABILIDAD
+  const totalRentAnual = cuentas.reduce((s,c) => s + c.saldo*(c.rent/100), 0);
+  const totalRentDia = totalRentAnual / 365;
+  const inflacion = 2.5; // estimada
+  const perdidaInflacion = total * (inflacion/100);
+
+  document.getElementById('pat-rentabilidad').innerHTML = `
+    <div class="pred-item">
+      <div>💰 Rentabilidad total anual (actual)</div>
+      <div style="font-family:var(--font-mono);color:var(--green)">${fmt(totalRentAnual)}</div>
+    </div>
+    <div class="pred-item">
+      <div>📅 Rentabilidad por día</div>
+      <div style="font-family:var(--font-mono);color:var(--green)">${fmt(totalRentDia)}</div>
+    </div>
+    <div class="pred-item">
+      <div>📉 Pérdida estimada por inflación (~${inflacion}%)</div>
+      <div style="font-family:var(--font-mono);color:var(--red)">-${fmt(perdidaInflacion)}/año</div>
+    </div>
+    <div class="pred-item" style="border-top:1px solid var(--border)">
+      <div><b>Rendimiento real neto</b></div>
+      <div style="font-family:var(--font-mono);color:${totalRentAnual - perdidaInflacion >= 0 ? 'var(--green)' : 'var(--red)'}">
+        ${fmt(totalRentAnual - perdidaInflacion)}/año
+      </div>
+    </div>
+    <div class="alert ${totalRentAnual < perdidaInflacion ? 'alert-warn' : 'alert-ok'}" style="margin-top:16px;font-size:12px;flex-direction:column;align-items:flex-start;gap:6px">
+      ${totalRentAnual < perdidaInflacion
+        ? `⚠️ Tu dinero está perdiendo poder adquisitivo. Con ${fmt(total)} parado, un fondo indexado al 7% anual te generaría <b>${fmt(total * 0.07)}/año</b> en lugar de ${fmt(totalRentAnual)}. La diferencia es <b>${fmt(total * 0.07 - totalRentAnual)}/año</b>.`
+        : `✅ Tu rentabilidad supera la inflación estimada. Bien hecho.`
+      }
+    </div>`;
+}
+
+
+// ═══════════════════════════════════════════════════════
+//  THEME TOGGLE
+// ═══════════════════════════════════════════════════════
+let isDark = true;
+function toggleTheme() {
+  isDark = !isDark;
+  document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+  const lbl = document.getElementById('theme-label');
+  if (lbl) lbl.textContent = isDark ? '🌙 Modo oscuro' : '☀️ Modo claro';
+  const track = document.getElementById('theme-track');
+  const thumb = document.getElementById('theme-thumb');
+  if (track) track.style.background = isDark ? 'var(--accent2)' : 'var(--border2)';
+  if (thumb) thumb.style.transform = isDark ? '' : 'translateX(16px)';
+  const mobileBtn = document.getElementById('theme-btn-mobile');
+  if (mobileBtn) mobileBtn.textContent = isDark ? '🌙' : '☀️';
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  MONTH FILTER POPULATION
+// ═══════════════════════════════════════════════════════════════════
+
+function populateMonthFilter() {
+  const sel = document.getElementById('txn-month-filter');
+  const months = [...new Set(transactions.map(t => monthKey(t.date)))].sort().reverse();
+  sel.innerHTML = '<option value="">Todos los meses</option>' + months.map(k =>
+    `<option value="${k}">${monthLabel(k)}</option>`).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  REGLA 50/30/20
+// ═══════════════════════════════════════════════════════════════════
+
+// Category buckets: necesidades / deseos / ahorro
+const BUCKET_MAP = {
+  supermercado: 'necesidades', salud: 'necesidades', transporte: 'necesidades',
+  fijo_banco: 'necesidades', traspaso: 'neutral',
+  restaurantes: 'deseos', ropa: 'deseos', ocio: 'deseos', belleza: 'deseos',
+  bizum: 'deseos', revolut: 'deseos', otros: 'deseos', hogar: 'necesidades',
+  sin_cat: 'deseos',
+  ingreso: 'neutral',
+};
+
+function getBucket(catId) {
+  return BUCKET_MAP[catId] || 'deseos';
+}
+
+function renderRegla() {
+  const months = parseInt(document.getElementById('regla-period').value);
+  const nomina = parseFloat(document.getElementById('regla-nomina-input').value) || 1452.66;
+  document.getElementById('regla-nomina').textContent = fmt(nomina);
+
+  const txns = filterPeriod(transactions, months).filter(t => t.amount < 0 && t.category !== 'traspaso' && t.category !== 'ingreso');
+  const divisor = months;
+
+  let totals = { necesidades: 0, deseos: 0 };
+  txns.forEach(t => {
+    const b = getBucket(t.category);
+    if (b !== 'neutral') totals[b] = (totals[b] || 0) + Math.abs(t.amount);
+  });
+  Object.keys(totals).forEach(k => totals[k] /= divisor);
+
+  // Targets
+  const targets = { necesidades: nomina * 0.5, deseos: nomina * 0.3, ahorro: nomina * 0.2 };
+  // Count the 200€ monthly transfer to savings as actual saving
+  const ahorroProgramado = 200;
+  const actualAhorro = Math.max(0, nomina - totals.necesidades - totals.deseos);
+  const actuals = { necesidades: totals.necesidades, deseos: totals.deseos, ahorro: Math.max(ahorroProgramado, actualAhorro) };
+
+  const buckets = [
+    { key: 'necesidades', label: 'Necesidades (50%)', pct: 50, color: 'var(--accent2)', emoji: '🏠', desc: 'Lo que necesitas para vivir: comida, transporte, facturas, médico.' },
+    { key: 'deseos', label: 'Deseos (30%)', pct: 30, color: 'var(--accent)', emoji: '🛍️', desc: 'Lo que quieres pero no necesitas: ropa, restaurantes, ocio.' },
+    { key: 'ahorro', label: 'Ahorro (20%)', pct: 20, color: 'var(--green)', emoji: '💰', desc: 'Lo que guardas para el futuro. Incluye los 200€/mes que ya transfieres a ahorro.' },
+  ];
+
+  // Show 50/30/20 explanation box
+  const _reglaEl = document.getElementById('regla-intro-box');
+  if (_reglaEl) _reglaEl.innerHTML = `<div style="background:rgba(167,139,250,.07);border:1px solid rgba(167,139,250,.2);border-radius:12px;padding:14px 16px;margin-bottom:20px;font-size:13px;line-height:1.7;color:var(--text)">
+    <strong>⚖️ ¿Qué es esto?</strong> Es una guía para repartir tu sueldo de forma sana: 
+    <strong style="color:var(--accent2)">50% a necesidades</strong> (comida, transporte, facturas), 
+    <strong style="color:var(--accent)">30% a deseos</strong> (ropa, salir, ocio), 
+    <strong style="color:var(--green)">20% al ahorro</strong> (incluye tus 200€/mes de traspaso). 
+    No es una ley, es una brújula.
+  </div>`;
+
+  document.getElementById('regla-buckets').innerHTML = buckets.map(b => {
+    const actual = actuals[b.key];
+    const target = targets[b.key];
+    const fill = Math.min(1, actual / target);
+    const ok = actual <= target;
+    const statusColor = ok ? 'var(--green)' : 'var(--red)';
+    return `<div style="background:var(--surface2);border-radius:14px;padding:16px;border:1px solid ${ok ? 'rgba(91,191,142,.2)' : 'rgba(224,92,106,.2)'}">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <span style="font-size:20px">${b.emoji}</span>
+        <span class="badge" style="background:${statusColor}22;color:${statusColor}">${ok ? '✓ OK' : '✗ Exceso'}</span>
+      </div>
+      <div style="font-weight:600;font-size:13px">${b.label}</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:4px;line-height:1.4">${b.desc||''}</div>
+      <div style="font-size:10px;color:var(--muted);margin-bottom:10px">Meta: ${b.pct}% de tu nómina = ${fmt(target)}/mes</div>
+      <div style="font-family:var(--font-mono);font-size:20px;color:${statusColor};margin-bottom:8px">${fmt(actual)}</div>
+      <div class="progress-track">
+        <div class="progress-fill" style="width:${fill*100}%;background:${statusColor}"></div>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:6px">${Math.round(fill*100)}% del presupuesto</div>
+      ${!ok ? `<div style="font-size:11px;color:var(--red);margin-top:4px">+${fmt(actual-target)} sobre el límite</div>` : ''}
+    </div>`;
+  }).join('');
+
+  // By-cat breakdown
+  const byCat = {};
+  txns.forEach(t => {
+    byCat[t.category] = (byCat[t.category] || 0) + Math.abs(t.amount) / divisor;
+  });
+  const sorted = Object.entries(byCat).sort((a,b)=>b[1]-a[1]);
+  document.getElementById('regla-cats-area').innerHTML = sorted.map(([catId, avg]) => {
+    const cat = getCat(catId);
+    const bucket = getBucket(catId);
+    const bucketColors = { necesidades: 'var(--accent2)', deseos: 'var(--accent)', ahorro: 'var(--green)', neutral: 'var(--muted)' };
+    const bLabel = { necesidades: 'Necesidad', deseos: 'Deseo', neutral: 'Neutral' };
+    return `<div class="card" style="padding:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <span style="font-size:22px">${cat.emoji}</span>
+        <span class="badge" style="background:${bucketColors[bucket]}22;color:${bucketColors[bucket]}">${bLabel[bucket]||'—'}</span>
+      </div>
+      <div style="font-weight:600;font-size:13px">${cat.name}</div>
+      <div style="font-family:var(--font-mono);font-size:18px;margin-top:6px">${fmt(avg)}<span style="font-size:11px;color:var(--muted)">/mes</span></div>
+    </div>`;
+  }).join('');
+
+  // ALERTAS SEMANALES
+  renderAlertasSemana(nomina);
+
+  // IMPULSIVO
+  renderImpulsivos();
+}
+
+function renderAlertasSemana(nomina) {
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const dayOfMonth = now.getDate();
+  const weekOfMonth = Math.ceil(dayOfMonth / 7);
+  const daysElapsed = dayOfMonth;
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
+  const budgetPerDay = (nomina * 0.8) / daysInMonth; // 80% para gastos (20% ahorro)
+
+  const thisMonthTxns = transactions.filter(t =>
+    t.date >= startOfMonth && t.date <= now && t.amount < 0 &&
+    t.category !== 'traspaso' && t.category !== 'ingreso'
+  );
+  const spentSoFar = thisMonthTxns.reduce((s,t) => s + Math.abs(t.amount), 0);
+  const expectedByNow = budgetPerDay * daysElapsed;
+  const budget80 = nomina * 0.8;
+  const pct = spentSoFar / budget80;
+  const statusColor = pct >= 1 ? 'var(--red)' : pct >= 0.8 ? 'var(--yellow)' : 'var(--green)';
+
+  // This week
+  const startOfWeek = new Date(now);
+  startOfWeek.setDate(now.getDate() - now.getDay());
+  const weekTxns = thisMonthTxns.filter(t => t.date >= startOfWeek);
+  const weekSpent = weekTxns.reduce((s,t) => s + Math.abs(t.amount), 0);
+  const weekBudget = budgetPerDay * 7;
+
+  document.getElementById('regla-semanal').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+      <div style="background:var(--surface2);border-radius:12px;padding:14px">
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px">Gasto esta semana</div>
+        <div style="font-family:var(--font-mono);font-size:22px;color:${weekSpent > weekBudget ? 'var(--red)' : 'var(--green)'}">${fmt(weekSpent)}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px">Presupuesto semana: ${fmt(weekBudget)}</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:12px;padding:14px">
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px">Gasto mes (día ${dayOfMonth})</div>
+        <div style="font-family:var(--font-mono);font-size:22px;color:${statusColor}">${fmt(spentSoFar)}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px">Esperado a estas alturas: ${fmt(expectedByNow)}</div>
+      </div>
+    </div>
+    <div class="progress-track" style="height:12px;margin-bottom:8px">
+      <div class="progress-fill" style="width:${Math.min(100,pct*100)}%;background:${statusColor}"></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted)">
+      <span>${Math.round(pct*100)}% del presupuesto mensual usado</span>
+      <span>Quedan ${fmt(Math.max(0, budget80 - spentSoFar))}</span>
+    </div>
+    ${pct >= 0.8 ? `<div class="alert alert-${pct>=1?'err':'warn'}" style="margin-top:12px">
+      ${pct >= 1 ? '🔴 Has superado el presupuesto mensual. Modo ahorro activado.' : `⚠️ Llevas el ${Math.round(pct*100)}% del presupuesto a día ${dayOfMonth} de mes. Queda mucho mes por delante.`}
+    </div>` : `<div class="alert alert-ok" style="margin-top:12px">✅ Vas bien de presupuesto este mes.</div>`}`;
+}
+
+function renderImpulsivos() {
+  const now = new Date();
+  const impulsivos = transactions.filter(t =>
+    t.impulsivo && t.date.getMonth() === now.getMonth() && t.date.getFullYear() === now.getFullYear()
+  );
+  const total = impulsivos.reduce((s,t) => s + Math.abs(t.amount), 0);
+  document.getElementById('impulsivo-total').textContent = fmt(total);
+  document.getElementById('impulsivo-list').innerHTML = impulsivos.length === 0
+    ? `<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px">Ninguna compra marcada como impulsiva este mes 🎉</div>`
+    : impulsivos.map(t => {
+        const cat = getCat(t.category);
+        return `<div class="pred-item">
+          <div style="display:flex;gap:10px;align-items:center">
+            <span style="font-size:16px">${cat.emoji}</span>
+            <div><div style="font-size:13px">${t.name}</div><div style="font-size:11px;color:var(--muted)">${dateLabel(t.date)}</div></div>
+          </div>
+          <div style="font-family:var(--font-mono);color:var(--red)">${fmt(Math.abs(t.amount))}</div>
+        </div>`;
+      }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  IMPULSIVO TOGGLE
+// ═══════════════════════════════════════════════════════════════════
+
+function setImpulsivo(val) {
+  const t = transactions.find(x => x.id === editingIdx);
+  if (t) t.impulsivo = val;
+  document.getElementById('btn-impulsivo-on').style.background = val ? 'rgba(224,92,106,.3)' : '';
+  document.getElementById('btn-impulsivo-on').style.color = val ? 'var(--red)' : '';
+  document.getElementById('btn-impulsivo-off').style.background = !val ? 'rgba(91,191,142,.15)' : '';
+  document.getElementById('btn-impulsivo-off').style.color = !val ? 'var(--green)' : '';
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  RETOS
+// ═══════════════════════════════════════════════════════════════════
+
+let retos = [];
+
+function addReto() {
+  const name = document.getElementById('reto-name').value.trim();
+  const dias = parseInt(document.getElementById('reto-dias').value) || 7;
+  const emoji = document.getElementById('reto-emoji').value.trim() || '🎯';
+  const catId = document.getElementById('reto-cat').value;
+  if (!name) return;
+  retos.push({ name, dias, emoji, catId, start: new Date(), progress: 0, done: false });
+  closeModal('modal-add-reto');
+  renderRetos();
+}
+
+function renderRetos() {
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
+
+  // Calculate spending by day this month
+  const spendByDay = {};
+  transactions.forEach(t => {
+    if (t.date >= startOfMonth && t.date <= now && t.amount < 0 && t.category !== 'traspaso') {
+      const d = t.date.getDate();
+      spendByDay[d] = (spendByDay[d] || 0) + Math.abs(t.amount);
+    }
+  });
+
+  // Days without discretionary spend
+  const discretionaryCats = new Set(['restaurantes','ropa','ocio','belleza','bizum','revolut','otros']);
+  const spendByDayDiscr = {}; // stores array of txns per day
+  transactions.forEach(t => {
+    if (t.date >= startOfMonth && t.date <= now && t.amount < 0 && discretionaryCats.has(t.category)) {
+      const d = t.date.getDate();
+      if (!spendByDayDiscr[d]) spendByDayDiscr[d] = [];
+      spendByDayDiscr[d].push(t);
+    }
+  });
+
+  const daysWithoutDiscr = [];
+  for (let d = 1; d <= now.getDate(); d++) {
+    if (!spendByDayDiscr[d]) // day has no discretionary spend
+          daysWithoutDiscr.push(d);
+  }
+
+  // Current streak
+  let streak = 0;
+  for (let d = now.getDate(); d >= 1; d--) {
+    if (!spendByDayDiscr[d] || !spendByDayDiscr[d].length) streak++;
+    else break;
+  }
+
+  // Best streak
+  let bestStreak = 0, cur = 0;
+  for (let d = 1; d <= now.getDate(); d++) {
+    if (!spendByDayDiscr[d] || !spendByDayDiscr[d].length) { cur++; bestStreak = Math.max(bestStreak, cur); }
+    else cur = 0;
+  }
+
+  // Avg daily spend
+  const totalThisMonth = Object.values(spendByDay).reduce((s,v)=>s+v,0);
+  const avgDaily = now.getDate() > 0 ? totalThisMonth / now.getDate() : 0;
+  const savedByNoSpend = daysWithoutDiscr.length * avgDaily;
+
+  // Streak emoji
+  const streakEmoji = streak === 0 ? '😅' : streak < 3 ? '🌱' : streak < 7 ? '🔥' : streak < 14 ? '💪' : '🏆';
+  document.getElementById('racha-emoji').textContent = streakEmoji;
+  document.getElementById('racha-dias').textContent = streak;
+  document.getElementById('mejor-racha').textContent = bestStreak;
+  document.getElementById('dias-sin-gasto').textContent = daysWithoutDiscr.length;
+  document.getElementById('dias-mes-total').textContent = now.getDate();
+  document.getElementById('ahorro-reto').textContent = fmt(savedByNoSpend);
+  document.getElementById('racha-ultimo').textContent = streak > 0
+    ? `¡Llevas ${streak} días seguidos! Sigue así.`
+    : 'Hoy has gastado en algo discrecional. ¡Mañana es otro día!';
+
+  // CALENDARIO
+  const cal = document.getElementById('reto-calendario');
+  // Day labels
+  const dayNames = ['L','M','X','J','V','S','D'];
+  let calHTML = dayNames.map(d => `<div style="text-align:center;font-size:10px;color:var(--muted);padding:4px">${d}</div>`).join('');
+  // First day offset (Mon=0)
+  const firstDay = (new Date(now.getFullYear(), now.getMonth(), 1).getDay() + 6) % 7;
+  for (let i = 0; i < firstDay; i++) calHTML += '<div></div>';
+  for (let d = 1; d <= daysInMonth; d++) {
+    const isFuture = d > now.getDate();
+    const hasSpend = !!(spendByDayDiscr[d] && spendByDayDiscr[d].length);
+    const bg = isFuture ? 'var(--surface2)' : hasSpend ? 'rgba(224,92,106,.2)' : 'rgba(91,191,142,.2)';
+    const border = isFuture ? 'transparent' : hasSpend ? 'rgba(224,92,106,.4)' : 'rgba(91,191,142,.4)';
+    const color = isFuture ? 'var(--muted)' : hasSpend ? 'var(--red)' : 'var(--green)';
+    calHTML += `<div style="text-align:center;padding:6px 2px;border-radius:8px;background:${bg};border:1px solid ${border};color:${color};font-size:12px;font-weight:600">${d}</div>`;
+  }
+  cal.innerHTML = calHTML;
+
+  // RETOS LIST
+  // Breakdown: what was spent on red days
+  const breakdownEl = document.getElementById('reto-breakdown');
+  if (breakdownEl) {
+    const redDaysList = Object.entries(spendByDayDiscr).sort((a,b) => parseInt(a[0])-parseInt(b[0]));
+    if (!redDaysList.length) {
+      breakdownEl.innerHTML = '<div class="alert alert-ok" style="font-size:13px">🎉 ¡Ningún día rojo este mes! Racha perfecta.</div>';
+    } else {
+      breakdownEl.innerHTML = redDaysList.map(([day, txnsDay]) => {
+        const total = txnsDay.reduce((s,t) => s+Math.abs(t.amount), 0);
+        return `<div style="margin-bottom:16px">
+          <div style="font-weight:600;color:var(--red);margin-bottom:8px;font-size:13px">🔴 Día ${day} — total gastado: ${fmt(total)}</div>
+          ${txnsDay.map(t => {
+            const cat = getCat(t.category);
+            return `<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border)">
+              <span style="font-size:16px">${cat.emoji}</span>
+              <div style="flex:1"><div style="font-size:13px;font-weight:500">${t.name}</div><div style="font-size:11px;color:var(--muted)">${cat.name}</div></div>
+              <div style="font-family:var(--font-mono);font-size:13px;color:var(--red)">${fmt(Math.abs(t.amount))}</div>
+            </div>`;
+          }).join('')}
+        </div>`;
+      }).join('<hr style="border:none;border-top:1px solid var(--border);margin:8px 0">');
+    }
+  }
+
+  const retosList = document.getElementById('retos-list');
+  if (retos.length === 0) {
+    retosList.innerHTML = `<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px">Sin retos activos. ¡Crea uno!</div>`;
+  } else {
+    retosList.innerHTML = retos.map((r,i) => {
+      const elapsed = Math.floor((now - r.start) / 86400000);
+      const pct = Math.min(1, elapsed / r.dias);
+      const done = elapsed >= r.dias;
+      return `<div class="pred-item">
+        <div style="display:flex;align-items:center;gap:12px;flex:1">
+          <span style="font-size:24px">${r.emoji}</span>
+          <div style="flex:1">
+            <div style="font-weight:600">${r.name}</div>
+            <div class="progress-track" style="margin-top:6px">
+              <div class="progress-fill" style="width:${pct*100}%;background:${done?'var(--green)':'var(--accent2)'}"></div>
+            </div>
+            <div style="font-size:11px;color:var(--muted);margin-top:4px">${elapsed}/${r.dias} días ${done?'✅ Completado':''}</div>
+          </div>
+        </div>
+        <button class="btn btn-danger btn-sm btn-icon" onclick="retos.splice(${i},1);renderRetos()">🗑</button>
+      </div>`;
+    }).join('');
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  INVERSIÓN + ESTACIONALIDAD
+// ═══════════════════════════════════════════════════════════════════
+
+function renderInversion() {
+  const capital = parseFloat(document.getElementById('inv-capital').value) || 0;
+  const mensual = parseFloat(document.getElementById('inv-mensual').value) || 0;
+  const rentAnual = parseFloat(document.getElementById('inv-rent').value) || 7;
+  const years = parseInt(document.getElementById('inv-years').value) || 10;
+  const rentMensual = rentAnual / 100 / 12;
+
+  // Compound interest with monthly contributions
+  const yearlyData = [];
+  let valor = capital;
+  let aportado = capital;
+  for (let y = 0; y <= years; y++) {
+    yearlyData.push({ year: y, valor: Math.round(valor), aportado: Math.round(aportado) });
+    for (let m = 0; m < 12; m++) {
+      valor = valor * (1 + rentMensual) + mensual;
+    }
+    aportado += mensual * 12;
+  }
+
+  const final = yearlyData[years];
+  const totalAportado = capital + mensual * 12 * years;
+  const ganancias = final.valor - totalAportado;
+
+  document.getElementById('inv-stats').innerHTML = `
+    <div style="background:var(--surface2);border-radius:14px;padding:16px;border:1px solid rgba(91,191,142,.2)">
+      <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px">Capital final en ${years} años</div>
+      <div style="font-family:var(--font-mono);font-size:28px;color:var(--green)">${fmt(final.valor)}</div>
+    </div>
+    <div style="background:var(--surface2);border-radius:14px;padding:16px;border:1px solid rgba(200,169,110,.2)">
+      <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px">Total aportado</div>
+      <div style="font-family:var(--font-mono);font-size:28px;color:var(--accent)">${fmt(totalAportado)}</div>
+    </div>
+    <div style="background:var(--surface2);border-radius:14px;padding:16px;border:1px solid rgba(126,111,196,.2)">
+      <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px">Ganancias por interés</div>
+      <div style="font-family:var(--font-mono);font-size:28px;color:var(--accent2)">${fmt(ganancias)}</div>
+    </div>`;
+
+  // Stacked bar chart SVG
+  const maxVal = final.valor;
+  const chartH = 180;
+  const barW = 100 / (years + 1);
+  let bars = '';
+  yearlyData.forEach((d, i) => {
+    const totalH = (d.valor / maxVal) * (chartH - 30);
+    const aportH = Math.min(totalH, (d.aportado / maxVal) * (chartH - 30));
+    const ganH = totalH - aportH;
+    const x = i * barW + barW * 0.1;
+    const bw = barW * 0.8;
+    const y_total = chartH - 20 - totalH;
+    bars += `
+      <rect x="${x}%" y="${chartH-20-aportH}" width="${bw}%" height="${aportH}" fill="var(--accent)" rx="2" opacity=".8"/>
+      <rect x="${x}%" y="${y_total}" width="${bw}%" height="${ganH}" fill="var(--green)" rx="2" opacity=".8"/>
+      <text x="${x+bw/2}%" y="${chartH-4}" text-anchor="middle" fill="#8a8499" font-size="9">Año ${d.year}</text>
+      ${i % 2 === 0 && d.year > 0 ? `<text x="${x+bw/2}%" y="${y_total - 3}" text-anchor="middle" fill="var(--green)" font-size="8">${fmtShort(d.valor)}</text>` : ''}`;
+  });
+  bars += `<rect x="0" y="0" width="12" height="10" fill="var(--accent)" rx="2"/>
+    <text x="16" y="9" fill="var(--muted)" font-size="9">Aportado</text>
+    <rect x="70" y="0" width="12" height="10" fill="var(--green)" rx="2"/>
+    <text x="86" y="9" fill="var(--muted)" font-size="9">Ganancias</text>`;
+  document.getElementById('inv-chart').innerHTML = `<svg width="100%" height="${chartH}" style="overflow:visible">${bars}</svg>`;
+
+  // ESTACIONALIDAD
+  renderEstacionalidad();
+}
+
+function renderEstacionalidad() {
+  const monthNames = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const byMonth = Array(12).fill(0);
+  const countByMonth = Array(12).fill(0);
+
+  transactions.filter(t => t.amount < 0 && t.category !== 'traspaso' && t.category !== 'ingreso').forEach(t => {
+    byMonth[t.date.getMonth()] += Math.abs(t.amount);
+    countByMonth[t.date.getMonth()]++;
+  });
+
+  // Average per month (across years)
+  const years = [...new Set(transactions.map(t => t.date.getFullYear()))];
+  const avgByMonth = byMonth.map((total, m) => {
+    const yearsWithData = years.filter(y =>
+      transactions.some(t => t.date.getFullYear() === y && t.date.getMonth() === m)
+    ).length;
+    return yearsWithData > 0 ? total / yearsWithData : 0;
+  });
+
+  const globalAvg = avgByMonth.reduce((s,v)=>s+v,0) / 12;
+  const max = Math.max(...avgByMonth, 1);
+
+  const data = avgByMonth.map((v, i) => ({ label: monthNames[i], val: v }));
+  const colors = avgByMonth.map(v => {
+    const ratio = v / globalAvg;
+    if (ratio >= 1.3) return 'var(--red)';
+    if (ratio >= 1.1) return 'var(--yellow)';
+    return 'var(--green)';
+  });
+
+  // SVG chart with colors
+  const chartH = 160;
+  const barW = 100 / 12;
+  let bars = '';
+  avgByMonth.forEach((v, i) => {
+    const h = Math.max(4, (v / max) * (chartH - 30));
+    const x = i * barW + barW * 0.1;
+    const bw = barW * 0.8;
+    bars += `
+      <rect x="${x}%" y="${chartH-20-h}" width="${bw}%" height="${h}" fill="${colors[i]}" rx="3" opacity=".85"/>
+      <text x="${x+bw/2}%" y="${chartH-4}" text-anchor="middle" fill="#8a8499" font-size="9">${monthNames[i]}</text>
+      <text x="${x+bw/2}%" y="${chartH-22-h}" text-anchor="middle" fill="${colors[i]}" font-size="8">${fmtShort(v)}</text>`;
+  });
+  // Avg line
+  const avgY = chartH - 20 - (globalAvg / max) * (chartH - 30);
+  bars += `<line x1="0" y1="${avgY}" x2="100%" y2="${avgY}" stroke="var(--muted)" stroke-dasharray="4" stroke-width="1"/>
+    <text x="101%" y="${avgY+4}" fill="var(--muted)" font-size="8">media</text>`;
+  document.getElementById('estacionalidad-chart').innerHTML = `<svg width="100%" height="${chartH}" style="overflow:visible">${bars}</svg>`;
+
+  // Tips
+  const expensive = avgByMonth
+    .map((v, i) => ({ month: monthNames[i], v, idx: i }))
+    .sort((a,b) => b.v - a.v)
+    .slice(0, 3);
+  document.getElementById('estacionalidad-tips').innerHTML = `
+    <div class="alert alert-warn">
+      📅 Tus meses más caros son: <b>${expensive.map(e=>e.month).join(', ')}</b>.
+      Intenta reservar <b>${fmt((expensive[0].v - globalAvg) * 0.5)}</b> extra el mes anterior a cada uno.
+    </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  DEFAULT FIXED EXPENSES (from pattern detection)
+// ═══════════════════════════════════════════════════════════════════
+
+function initDefaultFijos() {
+  fixedExpenses = [
+    { name: 'CaixaBank cuota', amount: 195.60, day: 1, catId: 'fijo_banco', emoji: '🏦' },
+    { name: 'Holiday Gym', amount: 99.00, day: 28, catId: 'salud', emoji: '🏋️' },
+    { name: 'Clínica Alma Martínez', amount: 60.00, day: 25, catId: 'salud', emoji: '🦷' },
+    { name: 'Pum English', amount: 60.00, day: 3, catId: 'otros', emoji: '🇬🇧' },
+    { name: 'Traspaso → Ahorro', amount: 200.00, day: 28, catId: 'traspaso', emoji: '🏦' },
+    { name: 'Revolut suscripciones (Claude + Spotify)', amount: 50.00, day: 1, catId: 'traspaso', emoji: '💳' },
+  ];
+}
+
+function initDefaultLimites() {
+  limits = [
+    { catId: 'restaurantes', amount: 150 },
+    { catId: 'ropa', amount: 100 },
+  ];
+}
+
+function initDefaultCuentas() {
+  cuentas = [
+    { id: 1, name: 'imagin (cuenta principal)', saldo: 11303.05, tipo: 'corriente', rent: 0, emoji: '💜', traspaso: false },
+    { id: 2, name: 'Cuenta de ahorro', saldo: 3000.00, tipo: 'ahorro', rent: 0.85, emoji: '🏦', traspaso: false },
+    { id: 3, name: 'Revolut (suscripciones)', saldo: 50, tipo: 'corriente', rent: 0, emoji: '💳', traspaso: true, presupuesto: 50 },
+  ];
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  MOBILE NAV
+// ═══════════════════════════════════════════════════════════════════
+
+function openDrawer() {
+  const overlay = document.getElementById('mobile-menu-overlay');
+  const drawer = document.getElementById('mobile-drawer');
+  overlay.style.display = 'block';
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => drawer.classList.add('open'));
+  });
+}
+
+function closeDrawer() {
+  const overlay = document.getElementById('mobile-menu-overlay');
+  const drawer = document.getElementById('mobile-drawer');
+  drawer.classList.remove('open');
+  setTimeout(() => { overlay.style.display = 'none'; }, 320);
+}
+
+function navDrawer(id) {
+  const { hidden } = loadPanelConfig();
+  const panelDef = ALL_PANELS.find(p => p.id === id);
+  if (panelDef && hidden.has(id) && !panelDef.alwaysVisible) return;
+  const overlay = document.getElementById('mobile-menu-overlay');
+  const drawer = document.getElementById('mobile-drawer');
+  drawer.classList.remove('open');
+  overlay.style.display = 'none';
+  showPanel(id);
+  setActivebnav(id);
+  window.scrollTo(0, 0);
+}
+
+function setActivebnav(id) {
+  document.querySelectorAll('.bnav-item').forEach(el => el.classList.remove('active'));
+  const el = document.getElementById('bnav-' + id);
+  if (el) el.classList.add('active');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════════════════════
+
+// ═══════════════════════════════════════════════════════════════════
+//  CLAUDE IMPORT
+// ═══════════════════════════════════════════════════════════════════
+let claudeImportBuffer = [];
+
+function copyClaudePrompt() {
+  const text = document.getElementById('claude-prompt-text').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = event.target;
+    btn.textContent = '✅ ¡Copiado!';
+    setTimeout(() => btn.textContent = '📋 Copiar prompt', 2000);
+  });
+}
+
+function previewClaudeImport() {
+  const raw = document.getElementById('claude-import-json').value.trim();
+  const preview = document.getElementById('claude-import-preview');
+  try {
+    let json = raw;
+    // Strip markdown code fences if Claude added them
+    json = json.replace(/```json|```/g, '').trim();
+    const items = JSON.parse(json);
+    if (!Array.isArray(items)) throw new Error('Debe ser un array JSON');
+    claudeImportBuffer = items;
+    preview.innerHTML = `<div style="background:var(--green)18;border:1px solid rgba(52,211,153,.3);border-radius:10px;padding:12px;font-size:13px">
+      <div style="font-weight:600;color:var(--green);margin-bottom:8px">✅ ${items.length} movimiento${items.length>1?'s':''} detectados:</div>
+      ${items.slice(0,5).map(t => {
+        const cat = getCat(t.category || 'otros');
+        return `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border);font-size:12px">
+          <span>${cat.emoji} ${t.name}</span>
+          <span style="font-family:var(--font-mono);color:${t.amount<0?'var(--red)':'var(--green)'}">${t.amount>0?'+':''}${t.amount}€</span>
+        </div>`;
+      }).join('')}
+      ${items.length > 5 ? `<div style="font-size:11px;color:var(--muted);margin-top:6px">...y ${items.length-5} más</div>` : ''}
+    </div>`;
+  } catch(e) {
+    preview.innerHTML = `<div style="background:var(--red)18;border:1px solid rgba(248,113,113,.3);border-radius:10px;padding:12px;font-size:13px;color:var(--red)">❌ JSON inválido: ${e.message}<br><span style="font-size:11px;color:var(--muted)">Asegúrate de que Claude devolvió solo el JSON, sin texto extra</span></div>`;
+    claudeImportBuffer = [];
+  }
+}
+
+function confirmClaudeImport() {
+  if (!claudeImportBuffer.length) { previewClaudeImport(); return; }
+  let added = 0;
+  claudeImportBuffer.forEach(t => {
+    try {
+      const [y,m,d] = (t.date || new Date().toISOString().split('T')[0]).split('-');
+      const date = new Date(parseInt(y), parseInt(m)-1, parseInt(d));
+      const category = autoCategory(t.name, t.amount);
+      transactions.unshift({
+        id: Date.now() + added,
+        name: t.name || 'Importado',
+        amount: parseFloat(t.amount) || 0,
+        date,
+        category: t.category || category,
+        note: t.note || '🤖 Importado desde Claude',
+        impulsivo: false,
+        manual: true
+      });
+      added++;
+    } catch(e) { console.warn('Error importing', t, e); }
+  });
+  claudeImportBuffer = [];
+  document.getElementById('claude-import-json').value = '';
+  document.getElementById('claude-import-preview').innerHTML = '';
+  closeModal('modal-claude-import');
+  renderDashboard();
+  renderMovimientos();
+  // Show success
+  setTimeout(() => alert(`✅ ${added} movimiento${added>1?'s':''} añadidos correctamente.`), 100);
+}
+
+
+// ═══════════════════════════════════════════════════════════════════
+//  PANEL ORDERING & VISIBILITY SYSTEM
+// ═══════════════════════════════════════════════════════════════════
+
+const ALL_PANELS = [
+  { id: 'dashboard',    label: 'Dashboard',       emoji: '🏠', alwaysVisible: true },
+  { id: 'movimientos',  label: 'Movimientos',      emoji: '↕️', alwaysVisible: true },
+  { id: 'categorias',   label: 'Categorías',       emoji: '🏷️' },
+  { id: 'fijos',        label: 'Gastos fijos',     emoji: '📌' },
+  { id: 'limites',      label: 'Límites',          emoji: '⚠️' },
+  { id: 'ahorro',       label: 'Ahorro / Metas',   emoji: '🏦' },
+  { id: 'regla',        label: 'Regla 50/30/20',   emoji: '⚖️' },
+  { id: 'retos',        label: 'Retos',            emoji: '🔥' },
+  { id: 'prediccion',   label: 'Predicción',       emoji: '🔮' },
+  { id: 'patrimonio',   label: 'Patrimonio',       emoji: '🏛️' },
+  { id: 'inversion',    label: 'Inversión',        emoji: '📈' },
+  { id: 'analisis',     label: 'Análisis',         emoji: '📊' },
+];
+
+const LS_ORDER   = 'paula_panel_order';
+const LS_HIDDEN  = 'paula_panel_hidden';
+
+function loadPanelConfig() {
+  try {
+    const savedOrder  = JSON.parse(localStorage.getItem(LS_ORDER)  || 'null');
+    const savedHidden = JSON.parse(localStorage.getItem(LS_HIDDEN) || '[]');
+    let order = savedOrder
+      ? savedOrder.filter(id => ALL_PANELS.find(p => p.id === id))
+      : ALL_PANELS.map(p => p.id);
+    // add any new panels not in saved order
+    ALL_PANELS.forEach(p => { if (!order.includes(p.id)) order.push(p.id); });
+    return { order, hidden: new Set(savedHidden) };
+  } catch(e) {
+    return { order: ALL_PANELS.map(p => p.id), hidden: new Set() };
+  }
+}
+
+function savePanelConfigToLS(order, hidden) {
+  localStorage.setItem(LS_ORDER,  JSON.stringify(order));
+  localStorage.setItem(LS_HIDDEN, JSON.stringify([...hidden]));
+}
+
+function buildNav() {
+  const nav = document.getElementById('sortable-nav');
+  if (!nav) return;
+  const { order, hidden } = loadPanelConfig();
+  const currentPanel = document.querySelector('.panel.active')?.id?.replace('panel-','') || 'dashboard';
+
+  nav.innerHTML = order.map(id => {
+    const p = ALL_PANELS.find(x => x.id === id);
+    if (!p) return '';
+    const isHidden = hidden.has(id) && !p.alwaysVisible;
+    const isActive = id === currentPanel;
+    return `<div class="nav-item${isActive?' active':''} ${isHidden?'nav-hidden':''}"
+      data-panel="${id}"
+      onclick="${isHidden ? '' : `showPanel('${id}')`}"
+      style="${isHidden ? 'opacity:.4;cursor:default;' : ''}"
+      title="${isHidden ? 'Panel oculto — actívalo desde ⚙️ Personalizar' : p.label}">
+      <span class="nav-icon">${p.emoji}</span>
+      <span>${p.label}</span>
+      ${isHidden ? '<span style="margin-left:auto;font-size:10px">🙈</span>' : ''}
+    </div>`;
+  }).join('');
+
+  // Also rebuild mobile drawer
+  buildMobileDrawer(order, hidden);
+}
+
+function buildMobileDrawer(order, hidden) {
+  const drawer = document.getElementById('mobile-drawer-grid');
+  if (!drawer) return;
+  const { order: ord, hidden: hid } = loadPanelConfig();
+  drawer.innerHTML = (order || ord).map(id => {
+    const p = ALL_PANELS.find(x => x.id === id);
+    if (!p) return '';
+    const isHidden = (hidden || hid).has(id) && !p.alwaysVisible;
+    if (isHidden) return '';
+    return `<div class="drawer-item" onclick="navDrawer('${id}')">
+      <span style="font-size:22px">${p.emoji}</span>
+      <span>${p.label}</span>
+    </div>`;
+  }).join('');
+}
+
+// ── Customizer ──
+let _custDragSrc = null;
+
+function openPanelCustomizer() {
+  const modal = document.getElementById('modal-customizer');
+  modal.style.display = 'flex';
+  renderCustomizerList();
+}
+
+function closePanelCustomizer() {
+  document.getElementById('modal-customizer').style.display = 'none';
+}
+
+function renderCustomizerList() {
+  const { order, hidden } = loadPanelConfig();
+  const list = document.getElementById('customizer-list');
+
+  list.innerHTML = order.map((id, i) => {
+    const p = ALL_PANELS.find(x => x.id === id);
+    if (!p) return '';
+    const isHidden = hidden.has(id) && !p.alwaysVisible;
+    return `<div class="cust-row" draggable="true" data-id="${id}" data-index="${i}"
+      style="display:flex;align-items:center;gap:10px;padding:11px 14px;background:${isHidden?'var(--surface3)':'var(--surface2)'};border:1px solid var(--border);border-radius:12px;cursor:grab;user-select:none;transition:opacity .2s;opacity:${isHidden?.5:1}"
+      ondragstart="custDragStart(event)"
+      ondragover="custDragOver(event)"
+      ondrop="custDrop(event)"
+      ondragend="custDragEnd(event)">
+      <span style="color:var(--muted);font-size:16px;cursor:grab">⠿</span>
+      <span style="font-size:18px">${p.emoji}</span>
+      <span style="flex:1;font-size:13px;font-weight:500;${isHidden?'color:var(--muted)':''}">${p.label}</span>
+      ${p.alwaysVisible
+        ? '<span style="font-size:11px;color:var(--muted);background:var(--surface3);padding:2px 8px;border-radius:99px">siempre visible</span>'
+        : `<button onclick="togglePanelHidden('${id}')" style="background:${isHidden?'var(--green-soft,rgba(52,211,153,.15))':'var(--surface3)'};border:1px solid ${isHidden?'rgba(52,211,153,.3)':'var(--border)'};color:${isHidden?'var(--green)':'var(--muted)'};width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center" title="${isHidden?'Mostrar panel':'Ocultar panel'}">${isHidden?'👁':'🙈'}</button>`
+      }
+    </div>`;
+  }).join('');
+}
+
+function togglePanelHidden(id) {
+  const { order, hidden } = loadPanelConfig();
+  if (hidden.has(id)) hidden.delete(id); else hidden.add(id);
+  savePanelConfigToLS(order, hidden);
+  renderCustomizerList();
+  buildNav();
+}
+
+function custDragStart(e) {
+  _custDragSrc = e.currentTarget;
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', e.currentTarget.dataset.id);
+  setTimeout(() => e.currentTarget.style.opacity = '.3', 0);
+}
+function custDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  // visual hint
+  document.querySelectorAll('.cust-row').forEach(r => r.style.borderColor = 'var(--border)');
+  e.currentTarget.style.borderColor = 'var(--accent)';
+}
+function custDrop(e) {
+  e.preventDefault();
+  const srcId = e.dataTransfer.getData('text/plain');
+  const dstId = e.currentTarget.dataset.id;
+  if (srcId === dstId) return;
+  const { order, hidden } = loadPanelConfig();
+  const si = order.indexOf(srcId), di = order.indexOf(dstId);
+  if (si < 0 || di < 0) return;
+  order.splice(si, 1);
+  order.splice(di, 0, srcId);
+  savePanelConfigToLS(order, hidden);
+  renderCustomizerList();
+  buildNav();
+}
+function custDragEnd(e) {
+  e.currentTarget.style.opacity = '';
+  document.querySelectorAll('.cust-row').forEach(r => r.style.borderColor = 'var(--border)');
+}
+
+function savePanelOrder() {
+  closePanelCustomizer();
+  buildNav();
+}
+
+function resetPanelOrder() {
+  if (!confirm('¿Restablecer el orden y visibilidad originales?')) return;
+  localStorage.removeItem(LS_ORDER);
+  localStorage.removeItem(LS_HIDDEN);
+  buildNav();
+  renderCustomizerList();
+}
+
+// Touch drag support for mobile
+let _touchDragEl = null, _touchDragId = null, _touchGhost = null;
+function initTouchDrag() {
+  // Uses touchstart/touchmove/touchend on .cust-row elements
+  document.getElementById('customizer-list').addEventListener('touchstart', e => {
+    const row = e.target.closest('.cust-row');
+    if (!row) return;
+    _touchDragId = row.dataset.id;
+    _touchDragEl = row;
+    row.style.opacity = '.4';
+  }, { passive: true });
+
+  document.getElementById('customizer-list').addEventListener('touchmove', e => {
+    if (!_touchDragEl) return;
+    e.preventDefault();
+    const touch = e.touches[0];
+    const el = document.elementFromPoint(touch.clientX, touch.clientY);
+    const target = el?.closest('.cust-row');
+    if (target && target !== _touchDragEl) {
+      document.querySelectorAll('.cust-row').forEach(r => r.style.borderColor = 'var(--border)');
+      target.style.borderColor = 'var(--accent)';
+    }
+  }, { passive: false });
+
+  document.getElementById('customizer-list').addEventListener('touchend', e => {
+    if (!_touchDragEl) return;
+    const touch = e.changedTouches[0];
+    const el = document.elementFromPoint(touch.clientX, touch.clientY);
+    const target = el?.closest('.cust-row');
+    if (target && target.dataset.id !== _touchDragId) {
+      const { order, hidden } = loadPanelConfig();
+      const si = order.indexOf(_touchDragId), di = order.indexOf(target.dataset.id);
+      if (si >= 0 && di >= 0) {
+        order.splice(si, 1);
+        order.splice(di, 0, _touchDragId);
+        savePanelConfigToLS(order, hidden);
+        renderCustomizerList();
+        buildNav();
+      }
+    }
+    _touchDragEl.style.opacity = '';
+    document.querySelectorAll('.cust-row').forEach(r => r.style.borderColor = 'var(--border)');
+    _touchDragEl = null; _touchDragId = null;
+  }, { passive: true });
+}
+
+
+// ═══════════════════════════════════════════════════════════════════
+//  GITHUB AUTO-SYNC
+//  Reads pending.json from your repo every time the app loads.
+//  Claude writes to that file via GitHub API → app picks it up.
+// ═══════════════════════════════════════════════════════════════════
+
+const GH_CONFIG_KEY = 'paula_gh_config';
+
+function loadGHConfig() {
+  try { return JSON.parse(localStorage.getItem(GH_CONFIG_KEY) || 'null'); }
+  catch(e) { return null; }
+}
+function saveGHConfig(cfg) {
+  localStorage.setItem(GH_CONFIG_KEY, JSON.stringify(cfg));
+}
+
+// Called on app startup — tries to fetch pending.json from GitHub
+async function autoSyncFromGitHub() {
+  const cfg = loadGHConfig();
+  if (!cfg || !cfg.owner || !cfg.repo) return; // not configured yet
+
+  updateSyncBadge('syncing');
+  try {
+    // Use raw.githubusercontent.com (no auth needed for public repos)
+    // or GitHub API for private repos (needs token)
+    const url = cfg.token
+      ? `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/pending.json`
+      : `https://raw.githubusercontent.com/${cfg.owner}/${cfg.repo}/main/pending.json?t=${Date.now()}`;
+
+    const headers = cfg.token
+      ? { 'Authorization': 'token ' + cfg.token, 'Accept': 'application/vnd.github.v3+json' }
+      : {};
+
+    const res = await fetch(url, { headers });
+    if (res.status === 404) { updateSyncBadge('empty'); return; } // no pending movements
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+
+    let items;
+    if (cfg.token) {
+      const data = await res.json();
+      const decoded = atob(data.content.replace(/\n/g,''));
+      items = JSON.parse(decoded);
+      // Clear the file after reading
+      await clearPendingJSON(cfg, data.sha);
+    } else {
+      items = await res.json();
+    }
+
+    if (!Array.isArray(items) || items.length === 0) { updateSyncBadge('empty'); return; }
+
+    // Import the movements
+    let added = 0;
+    items.forEach(t => {
+      try {
+        const [y,m,d] = (t.date || new Date().toISOString().split('T')[0]).split('-');
+        transactions.unshift({
+          id: Date.now() + added,
+          name: t.name || 'Sync Claude',
+          amount: parseFloat(t.amount) || 0,
+          date: new Date(parseInt(y), parseInt(m)-1, parseInt(d)),
+          category: t.category || autoCategory(t.name || '', parseFloat(t.amount) || 0),
+          note: t.note || '🤖 Sync automático desde Claude',
+          impulsivo: false,
+          manual: true
+        });
+        added++;
+      } catch(e) { console.warn('sync error:', e); }
+    });
+
+    updateSyncBadge('ok', added);
+    if (added > 0) {
+      renderDashboard();
+      // Show toast
+      showToast(`✅ ${added} movimiento${added>1?'s':''} sincronizados desde Claude`);
+    }
+  } catch(e) {
+    console.warn('GitHub sync failed:', e);
+    updateSyncBadge('error');
+  }
+}
+
+async function clearPendingJSON(cfg, sha) {
+  // Overwrites pending.json with empty array so it's not imported twice
+  try {
+    await fetch(`https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/pending.json`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': 'token ' + cfg.token,
+        'Content-Type': 'application/json',
+        'Accept': 'application/vnd.github.v3+json'
+      },
+      body: JSON.stringify({
+        message: 'Clear pending movements after import',
+        content: btoa('[]'),
+        sha: sha
+      })
+    });
+  } catch(e) { console.warn('Could not clear pending.json:', e); }
+}
+
+function updateSyncBadge(state, count) {
+  const badge = document.getElementById('sync-badge');
+  const dot   = document.getElementById('sync-dot');
+  if (!badge || !dot) return;
+  const states = {
+    syncing: { color: 'var(--yellow)', text: '⏳ Sincronizando…' },
+    ok:      { color: 'var(--green)',  text: `✅ ${count} movimiento${count>1?'s':''} nuevos` },
+    empty:   { color: 'var(--muted)',  text: '✓ Sin movimientos nuevos' },
+    error:   { color: 'var(--red)',    text: '⚠️ Error al sincronizar' },
+  };
+  const s = states[state] || states.empty;
+  dot.style.background   = s.color;
+  badge.textContent = s.text;
+  badge.style.color = s.color;
+  if (state === 'ok') setTimeout(() => { badge.textContent = ''; dot.style.background = 'var(--green)'; }, 5000);
+}
+
+function showToast(msg) {
+  let toast = document.getElementById('sync-toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'sync-toast';
+    toast.style.cssText = 'position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--green);border-radius:12px;padding:12px 20px;font-size:13px;font-weight:600;color:var(--green);z-index:9999;box-shadow:0 8px 32px rgba(0,0,0,.4);transition:opacity .4s';
+    document.body.appendChild(toast);
+  }
+  toast.textContent = msg;
+  toast.style.opacity = '1';
+  setTimeout(() => toast.style.opacity = '0', 3500);
+}
+
+function openGHConfig() {
+  const cfg = loadGHConfig() || {};
+  document.getElementById('gh-owner').value    = cfg.owner || '';
+  document.getElementById('gh-repo').value     = cfg.repo  || '';
+  document.getElementById('gh-token').value    = cfg.token || '';
+  document.getElementById('gh-private').checked = !!cfg.token;
+  toggleGHTokenField();
+  document.getElementById('modal-gh-config').style.display = 'flex';
+  setTimeout(refreshProjectPrompt, 50);
+}
+
+function closeGHConfig() {
+  document.getElementById('modal-gh-config').style.display = 'none';
+}
+
+function toggleGHTokenField() {
+  const priv = document.getElementById('gh-private').checked;
+  document.getElementById('gh-token-row').style.display = priv ? 'block' : 'none';
+}
+
+function saveGHConfigForm() {
+  const owner = document.getElementById('gh-owner').value.trim();
+  const repo  = document.getElementById('gh-repo').value.trim();
+  const token = document.getElementById('gh-private').checked
+    ? document.getElementById('gh-token').value.trim()
+    : '';
+  if (!owner || !repo) { alert('Rellena usuario y repositorio'); return; }
+  saveGHConfig({ owner, repo, token });
+  closeGHConfig();
+  showToast('✅ Configuración guardada — sincronizando…');
+  setTimeout(autoSyncFromGitHub, 500);
+}
+
+function manualSync() {
+  const cfg = loadGHConfig();
+  if (!cfg) { openGHConfig(); return; }
+  autoSyncFromGitHub();
+}
+
+
+function buildProjectPrompt() {
+  const cfg = loadGHConfig() || {};
+  const owner = cfg.owner || 'TU_USUARIO';
+  const repo  = cfg.repo  || 'TU_REPO';
+  const token = cfg.token || 'TU_TOKEN_AQUI';
+  const today = new Date().toISOString().split('T')[0];
+  return `Eres el asistente financiero personal de Paula.
+
+FUNCIÓN PRINCIPAL:
+Cuando Paula te describa gastos o ingresos en lenguaje natural, los registras en su app de finanzas automáticamente escribiendo en GitHub.
+
+CÓMO REGISTRAR UN MOVIMIENTO:
+1. Interpreta lo que Paula dice (puede ser informal: "hoy gasté 12 en el super", "me pagó Ana 20 pavos", "fui al gym, costó 99")
+2. Crea el JSON con los movimientos
+3. Escribe ese JSON en el archivo pending.json del repo usando la GitHub API
+
+GITHUB API — escribe en el archivo:
+- Endpoint: https://api.github.com/repos/${owner}/${repo}/contents/pending.json
+- Método: PUT
+- Headers: Authorization: token ${token}, Content-Type: application/json
+- Body: {"message":"Add movements","content":"BASE64_DEL_JSON","sha":"SHA_ACTUAL"}
+  Para obtener el SHA actual: GET al mismo endpoint primero.
+
+FORMATO JSON (array de movimientos):
+[
+  {
+    "name": "Nombre del comercio o concepto",
+    "amount": -12.00,
+    "date": "YYYY-MM-DD",
+    "category": "supermercado",
+    "note": "opcional"
+  }
+]
+
+REGLAS DE CATEGORÍA (usa exactamente estos ids):
+- supermercado → Mercadona, Dialprix, Aldi, Lidl, Consum...
+- restaurantes → cafeterías, bares, restaurantes, panaderías, cafés, delivery
+- ropa → Zara, Bershka, Stradivarius, Primark, Lefties...
+- salud → farmacias, clínicas, dentista, fisio...
+- transporte → autobús, Renfe, taxi, gasolina, parking...
+- ocio → cines, libros, museo, conciertos, FNAC...
+- belleza → peluquería, estética, cosmética...
+- hogar → muebles, Ikea, decoración, Amazon...
+- ingreso → nómina, bizum recibido, transferencia recibida
+- traspaso → movimiento a cuenta de ahorro, Revolut
+- sin_cat → si no estás segura de la categoría
+- amount NEGATIVO = gasto, POSITIVO = ingreso
+- Si Paula no dice la fecha, usa la de hoy: ${today}
+
+FLUJO NORMAL:
+Paula: "hoy gasté 4,50 en el café y 8 en el super"
+Tú: [obtienes SHA → escribes pending.json → confirmas] "✅ Anotado: Café 4,50€ (restaurantes) y Supermercado 8€. Se importará en tu app la próxima vez que la abras."
+
+IMPORTANTE:
+- Cuando la app lea pending.json, lo vaciará automáticamente (escribe [] en el archivo)
+- Si hay movimientos previos en pending.json, añade los nuevos al array existente, no los sobreescribas
+- Puedes registrar varios movimientos a la vez
+- Si Paula te dice algo ambiguo, pregunta solo lo necesario (ej: "¿es un gasto de restaurante o era una compra online?")`;
+}
+
+function copyProjectPrompt() {
+  const prompt = buildProjectPrompt();
+  navigator.clipboard.writeText(prompt).then(() => {
+    const btn = event.target.closest('button');
+    const orig = btn.innerHTML;
+    btn.innerHTML = '✅ ¡Copiado!';
+    btn.style.background = 'var(--green)';
+    setTimeout(() => { btn.innerHTML = orig; btn.style.background = 'var(--accent)'; }, 2500);
+  });
+}
+
+// Rebuild project prompt when config fields change
+function refreshProjectPrompt() {
+  const el = document.getElementById('gh-project-prompt');
+  if (el) el.textContent = buildProjectPrompt();
+}
+
+
+function init() {
+  transactions = parseCSV();
+  // Re-apply improved auto-categorization with expanded keyword list
+  transactions.forEach(t => { t.category = autoCategory(t.name, t.amount); });
+  initDefaultFijos();
+  initDefaultLimites();
+  initDefaultCuentas();
+  buildNav();       // build dynamic sortable sidebar
+  populateModalSelects();
+  populateMonthFilter();
+  renderDashboard();
+  // Auto-sync from GitHub on startup
+  setTimeout(autoSyncFromGitHub, 800);
+  // init touch drag on customizer after it's opened
+  document.getElementById('modal-customizer').addEventListener('transitionend', initTouchDrag, { once: true });
+
+  // Set today as default date for new transactions
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('new-txn-date').value = today;
+
+  // Close modal on overlay click
+  document.querySelectorAll('.modal-overlay').forEach(m => {
+    m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
+  });
+}
+
+init();
+</script>
+
+<!-- ═══ PANEL CUSTOMIZER MODAL ═══ -->
+<div id="modal-customizer" style="display:none;position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,.7);backdrop-filter:blur(6px);align-items:center;justify-content:center">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:24px;width:400px;max-width:95vw;max-height:88vh;overflow-y:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <div>
+        <div style="font-size:18px;font-weight:700">⚙️ Personalizar menú</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:3px">Arrastra para reordenar · Ojo para ocultar/mostrar</div>
+      </div>
+      <button onclick="closePanelCustomizer()" style="background:var(--surface2);border:1px solid var(--border);color:var(--muted);width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:16px">×</button>
+    </div>
+    <div id="customizer-list" style="display:flex;flex-direction:column;gap:6px"></div>
+    <div style="display:flex;gap:10px;margin-top:20px">
+      <button onclick="resetPanelOrder()" style="background:var(--surface2);border:1px solid var(--border);color:var(--muted);padding:8px 14px;border-radius:10px;cursor:pointer;font-size:12px;font-weight:600">↺ Restablecer</button>
+      <button onclick="savePanelOrder()" style="flex:1;background:var(--accent);color:white;border:none;padding:10px;border-radius:10px;cursor:pointer;font-size:14px;font-weight:700">✅ Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ GITHUB CONFIG MODAL ═══ -->
+<div id="modal-gh-config" style="display:none;position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);align-items:center;justify-content:center">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:26px;width:460px;max-width:95vw;max-height:90vh;overflow-y:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+      <div style="font-size:20px;font-weight:700">🔗 Conectar con Claude</div>
+      <button onclick="closeGHConfig()" style="background:var(--surface2);border:1px solid var(--border);color:var(--muted);width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:16px">×</button>
+    </div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.5">
+      Cuando configures esto, podrás decirle a Claude tus gastos y aparecerán aquí automáticamente al abrir la app.
+    </div>
+
+    <!-- STEP INDICATOR -->
+    <div style="display:flex;gap:8px;margin-bottom:24px">
+      <div style="flex:1;background:var(--accent);height:3px;border-radius:99px"></div>
+      <div style="flex:1;background:var(--surface3);height:3px;border-radius:99px"></div>
+      <div style="flex:1;background:var(--surface3);height:3px;border-radius:99px"></div>
+    </div>
+
+    <!-- REPO CONFIG -->
+    <div style="background:var(--surface2);border-radius:14px;padding:16px;margin-bottom:14px;border:1px solid var(--border)">
+      <div style="font-weight:700;font-size:14px;margin-bottom:12px">① Tu repositorio de GitHub</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+        <div>
+          <label style="font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);display:block;margin-bottom:5px">Usuario GitHub</label>
+          <input id="gh-owner" type="text" oninput="refreshProjectPrompt()" placeholder="ej. paulalopez03" style="background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 12px;font-size:13px;width:100%">
+        </div>
+        <div>
+          <label style="font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);display:block;margin-bottom:5px">Nombre del repo</label>
+          <input id="gh-repo" type="text" oninput="refreshProjectPrompt()" placeholder="ej. finanzas-personal" style="background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 12px;font-size:13px;width:100%">
+        </div>
+      </div>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--muted)">
+        <input type="checkbox" id="gh-private" onchange="toggleGHTokenField()" style="width:16px;height:16px">
+        El repo es privado (necesito un token de acceso)
+      </label>
+    </div>
+
+    <div id="gh-token-row" style="display:none;background:var(--surface2);border-radius:14px;padding:16px;margin-bottom:14px;border:1px solid var(--border)">
+      <div style="font-weight:700;font-size:14px;margin-bottom:4px">② Token de acceso personal</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.5">
+        Ve a <strong>GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens</strong>. 
+        Crea uno con permiso <strong>Contents: Read and write</strong> solo para ese repo.
+      </div>
+      <input id="gh-token" type="password" placeholder="github_pat_XXXXXXXX…" style="background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 12px;font-size:13px;width:100%;font-family:monospace">
+      <div style="font-size:11px;color:var(--muted);margin-top:6px">⚠️ Se guarda solo en tu navegador (localStorage), nunca sale de tu dispositivo</div>
+    </div>
+
+    <!-- CLAUDE PROJECT PROMPT -->
+    <div style="background:rgba(167,139,250,.07);border:1px solid rgba(167,139,250,.2);border-radius:14px;padding:16px;margin-bottom:20px">
+      <div style="font-weight:700;font-size:14px;margin-bottom:4px">③ Instrucciones para tu Project de Claude</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.5">
+        Crea un Project en Claude y pega esto en las <strong>instrucciones del proyecto</strong> (el campo que aparece al crear/editar el proyecto). Rellena los valores con los tuyos.
+      </div>
+      <div id="gh-project-prompt" style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px;font-size:11px;font-family:monospace;color:var(--text);line-height:1.6;white-space:pre-wrap;max-height:220px;overflow-y:auto;user-select:all"></div>
+      <button onclick="copyProjectPrompt()" style="margin-top:10px;background:var(--accent);color:white;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700;display:flex;align-items:center;gap:6px">
+        📋 Copiar instrucciones del Project
+      </button>
+    </div>
+
+    <button onclick="saveGHConfigForm()" style="width:100%;background:var(--accent);color:white;border:none;padding:13px;border-radius:12px;cursor:pointer;font-size:15px;font-weight:700">
+      ✅ Guardar y sincronizar
+    </button>
+  </div>
+</div>
+
+</body>
+</html>
