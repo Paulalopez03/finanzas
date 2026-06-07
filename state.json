@@ -420,17 +420,6 @@
     }
   ],
   "retos": [],
-  "manualTxns": [
-    {
-      "id": 1780860372769,
-      "name": "Ahorro rev",
-      "date": "2026-06-07T00:00:00.000Z",
-      "amount": 103,
-      "category": "ahorro",
-      "note": "",
-      "manual": true,
-      "impulsivo": false
-    }
-  ],
-  "lastUpdated": "2026-06-07T19:26:34.757Z"
+  "manualTxns": [],
+  "lastUpdated": "2026-06-07T19:27:50.358Z"
 }
