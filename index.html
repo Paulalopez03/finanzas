@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="es" data-theme="dark">
-<head>
-  <link rel="icon" href="icono.png">
+<head> <link rel="icon" href="icono.png">
 <link rel="apple-touch-icon" href="icono.png">
 <meta name="msapplication-TileImage" content="icono.png">
 <meta charset="UTF-8">
@@ -890,7 +889,7 @@
         </div>
       </div>
       <div id="regla-intro-box"></div>
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px" id="regla-buckets" class="regla-buckets-grid"></div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px" id="regla-buckets" class="regla-buckets-grid"></div>
     </div>
 
     <!-- CATEGORÍAS POR BUCKET -->
@@ -1068,10 +1067,10 @@
 Reglas:
 - amount NEGATIVO para gastos, POSITIVO para ingresos
 - date en formato YYYY-MM-DD (si no lo digo, usa la fecha de hoy)
-- category debe ser una de estas exactas: supermercado, restaurantes, ropa, salud, transporte, ocio, belleza, hogar, bizum, ingreso, traspaso, sin_cat
+- category debe ser una de estas exactas: supermercado, restaurantes, ropa, salud, transporte, ocio, belleza, hogar, bizum, ingreso, ahorro, traspaso, sin_cat
 - Si no estás segura de la categoría, usa sin_cat
 - Si digo "me pagó X", amount positivo, category ingreso
-- Si digo "transferí/mandé a ahorro", category traspaso
+- Si digo "transferí/mandé a ahorro", category ahorro
 - NUNCA escribas nada más que el JSON puro</span>
       <button onclick="copyClaudePrompt()" style="display:block;margin-top:8px;background:var(--accent);color:white;border:none;padding:6px 12px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600">📋 Copiar prompt</button>
     </div>
@@ -1794,11 +1793,25 @@ let categories = [
     'nomina','transf. a su favor','transfer inmediata','bizum recibido',
     'reintegro','transferencia recibida','samsungapps','paypal transferencia'
   ]},
+  { id:'ahorro', name:'Ahorro', emoji:'🏦', color:'#34d399', keywords:[
+    'ahorro','cuenta ahorro','cuenta de ahorro','cuenta remunerada','saving','savings','fondo emergencia','apartado ahorro'
+  ]},
   { id:'traspaso', name:'Traspaso (movimiento interno)', emoji:'🔄', color:'#94a3b8', keywords:[
     'revolut**','revolut**0017*','revolut**8034*'
   ]},
   { id:'otros', name:'Otros', emoji:'📦', color:'#6b7280', keywords:[]},
 ];
+
+function ensureAhorroCategory() {
+  if (!categories.some(c => c.id === 'ahorro')) {
+    const ingresoIdx = categories.findIndex(c => c.id === 'ingreso');
+    const ahorroCat = {
+      id:'ahorro', name:'Ahorro', emoji:'🏦', color:'#34d399',
+      keywords:['ahorro','cuenta ahorro','cuenta de ahorro','cuenta remunerada','saving','savings','fondo emergencia','apartado ahorro']
+    };
+    categories.splice(ingresoIdx >= 0 ? ingresoIdx + 1 : categories.length - 1, 0, ahorroCat);
+  }
+}
 
 let transactions = [];
 let fixedExpenses = [];
@@ -2918,7 +2931,7 @@ function renderPatrimonio() {
     t.date.getMonth() === now.getMonth() && t.date.getFullYear() === now.getFullYear()
   );
   const traspasos = thisMonthTxns.filter(t => t.category === 'traspaso' && t.amount < 0);
-  const gastosReales = thisMonthTxns.filter(t => t.amount < 0 && t.category !== 'traspaso' && t.category !== 'ingreso');
+  const gastosReales = thisMonthTxns.filter(t => t.amount < 0 && t.category !== 'traspaso' && t.category !== 'ahorro' && t.category !== 'ingreso');
   const totalTrasp = traspasos.reduce((s,t) => s + Math.abs(t.amount), 0);
   const totalGastosR = gastosReales.reduce((s,t) => s + Math.abs(t.amount), 0);
 
@@ -3021,7 +3034,7 @@ function populateMonthFilter() {
 // Category buckets: necesidades / deseos / ahorro
 const BUCKET_MAP = {
   supermercado: 'necesidades', salud: 'necesidades', transporte: 'necesidades',
-  fijo_banco: 'necesidades', traspaso: 'neutral',
+  fijo_banco: 'necesidades', ahorro: 'ahorro', traspaso: 'neutral',
   restaurantes: 'deseos', ropa: 'deseos', ocio: 'deseos', belleza: 'deseos',
   bizum: 'deseos', revolut: 'deseos', otros: 'deseos', hogar: 'necesidades',
   sin_cat: 'deseos',
@@ -3045,15 +3058,15 @@ function renderRegla() {
     txnsFiltered = transactions.filter(t =>
       t.amount < 0 &&
       t.category !== 'traspaso' &&
+      t.category !== 'ahorro' &&
       t.category !== 'ingreso' &&
       t.date >= startOfMonth &&
       t.date <= now
     );
   } else {
-    txnsFiltered = filterPeriod(transactions, months).filter(t => t.amount < 0 && t.category !== 'traspaso' && t.category !== 'ingreso');
+    txnsFiltered = filterPeriod(transactions, months).filter(t => t.amount < 0 && t.category !== 'traspaso' && t.category !== 'ahorro' && t.category !== 'ingreso');
   }
   const txns = txnsFiltered;
-  // months=0 → show actual totals this month (no average)
   const divisor = months === 0 ? 1 : months;
   const modeLabel = months === 0 ? 'este mes' : `media ${months} mes${months > 1 ? 'es' : ''}`;
 
@@ -3064,11 +3077,23 @@ function renderRegla() {
   });
   Object.keys(totals).forEach(k => totals[k] /= divisor);
 
-  // Targets
-  const targets = { necesidades: nomina * 0.5, deseos: nomina * 0.3, ahorro: nomina * 0.2 };
+  const targets = {
+    necesidades: nomina * 0.5,
+    deseos: nomina * 0.3,
+    ahorro: nomina * 0.2,
+    disponible: nomina
+  };
 
-  // Savings split: real money moved to savings vs money simply not spent yet.
-  const isSavingsTransferName = (name) => /ahorro|saving|cuenta\s*de\s*ahorro|cuenta\s*ahorro|trf\s*ahorro/i.test(name || '');
+  // Ahorro real: solo se llena con movimientos categorizados como "Ahorro".
+  // Así puedes apartar el objetivo en varias tandas: 150€ primero, 140€ después, etc.
+  const isRealSavingsTransfer = (t) => {
+    return t.amount < 0 && t.category === 'ahorro';
+  };
+  const isProgrammedSavings = (f) => {
+    const txt = `${f.name || ''}`.toLowerCase();
+    return f.catId === 'ahorro' || (f.traspaso && /ahorro|saving|cuenta\s*remunerada|cuenta\s*de\s*ahorro|cuenta\s*ahorro/.test(txt));
+  };
+
   let txnsForSavings;
   if (months === 0) {
     const now = new Date();
@@ -3077,58 +3102,80 @@ function renderRegla() {
   } else {
     txnsForSavings = filterPeriod(transactions, months);
   }
+
   const ahorroRealDetectado = txnsForSavings
-    .filter(t => t.amount < 0 && t.category === 'traspaso' && isSavingsTransferName(t.name))
+    .filter(isRealSavingsTransfer)
     .reduce((s,t) => s + Math.abs(t.amount), 0) / divisor;
   const ahorroProgramado = fixedExpenses
-    .filter(f => f.catId === 'traspaso' && isSavingsTransferName(f.name))
+    .filter(isProgrammedSavings)
     .reduce((s,f) => s + Math.abs(f.amount || 0) / (f.freq || 1), 0);
-  const ahorroApartado = ahorroRealDetectado > 0 ? ahorroRealDetectado : ahorroProgramado;
-  const ahorroTotalNoConsumido = Math.max(0, nomina - totals.necesidades - totals.deseos);
-  const ahorroMargenDisponible = Math.max(0, ahorroTotalNoConsumido - ahorroApartado);
-  const ahorroEsReal = ahorroRealDetectado > 0;
-  const ahorroDetalleLabel = ahorroEsReal
-    ? 'Apartado real detectado'
-    : (ahorroProgramado > 0 ? 'Ahorro programado' : 'Apartado real detectado');
+  const ahorroReal = ahorroRealDetectado > 0 ? ahorroRealDetectado : ahorroProgramado;
 
-  const actuals = { necesidades: totals.necesidades, deseos: totals.deseos, ahorro: ahorroTotalNoConsumido };
+  const gastoReal = totals.necesidades + totals.deseos;
+  const dineroSinGastar = Math.max(0, nomina - gastoReal - ahorroReal);
+  const faltanteAhorro = Math.max(0, targets.ahorro - ahorroReal);
+  const posibleAhorroExtra = Math.max(0, dineroSinGastar - faltanteAhorro);
+
+  const actuals = {
+    necesidades: totals.necesidades,
+    deseos: totals.deseos,
+    ahorro: ahorroReal,
+    disponible: dineroSinGastar
+  };
 
   const buckets = [
-    { key: 'necesidades', label: 'Necesidades (50%)', pct: 50, color: 'var(--accent2)', emoji: '🏠', desc: 'Lo que necesitas para vivir: comida, transporte, facturas, médico.' },
-    { key: 'deseos', label: 'Deseos (30%)', pct: 30, color: 'var(--accent)', emoji: '🛍️', desc: 'Lo que quieres pero no necesitas: ropa, restaurantes, ocio.' },
-    { key: 'ahorro', label: 'Ahorro / margen (20%)', pct: 20, color: 'var(--green)', emoji: '💰', desc: 'Separa lo que has apartado de verdad y lo que simplemente no has gastado todavía.' },
+    { key: 'necesidades', label: 'Necesidades (50%)', pct: 50, color: 'var(--accent2)', emoji: '🏠', desc: 'Comida, transporte, facturas, salud y básicos.' },
+    { key: 'deseos', label: 'Deseos (30%)', pct: 30, color: 'var(--accent)', emoji: '🛍️', desc: 'Ropa, restaurantes, ocio, belleza y caprichos.' },
+    { key: 'ahorro', label: 'Ahorro real (20%)', pct: 20, color: 'var(--green)', emoji: '🏦', desc: 'Solo movimientos categorizados como Ahorro.' },
+    { key: 'disponible', label: 'Dinero disponible', pct: null, color: 'var(--blue)', emoji: '💜', desc: 'Lo que queda sin gastar, pero no cuenta como ahorro.' },
   ];
 
-  // Show 50/30/20 explanation box
   const _reglaEl = document.getElementById('regla-intro-box');
   if (_reglaEl) _reglaEl.innerHTML = `<div style="background:rgba(167,139,250,.07);border:1px solid rgba(167,139,250,.2);border-radius:12px;padding:14px 16px;margin-bottom:20px;font-size:13px;line-height:1.7;color:var(--text)">
-    <strong>⚖️ ¿Qué es esto?</strong> Es una guía para repartir tu sueldo de forma sana: 
-    <strong style="color:var(--accent2)">50% a necesidades</strong> (comida, transporte, facturas), 
-    <strong style="color:var(--accent)">30% a deseos</strong> (ropa, salir, ocio), 
-    <strong style="color:var(--green)">20% al ahorro</strong>. En ahorro ahora verás dos lecturas: 
-    lo que has apartado de verdad y lo que aún no has gastado. No es una ley, es una brújula.
+    <strong>⚖️ ¿Qué es esto?</strong> La regla separa tu sueldo en tres bloques: 
+    <strong style="color:var(--accent2)">50% necesidades</strong>, 
+    <strong style="color:var(--accent)">30% deseos</strong> y 
+    <strong style="color:var(--green)">20% ahorro real</strong>. 
+    El ahorro real solo sube cuando marcas movimientos con la categoría <strong>Ahorro</strong>. El dinero que simplemente sigue en la cuenta aparece aparte como <strong>dinero disponible</strong>.
   </div>`;
 
   document.getElementById('regla-buckets').innerHTML = buckets.map(b => {
     const actual = actuals[b.key];
     const target = targets[b.key];
-    let fill = Math.min(1, actual / target);
-    let ok = actual <= target;
-    let statusColor = ok ? 'var(--green)' : 'var(--red)';
-    let statusLabel = ok ? '✓ Bien' : '↑ Te pasas';
+    let fill = b.key === 'disponible' ? Math.min(1, actual / Math.max(1, nomina)) : Math.min(1, actual / target);
+    let statusColor = 'var(--green)';
+    let statusLabel = '✓ Bien';
     let detailText = `${Math.round(fill*100)}% del objetivo · ${modeLabel}`;
-    if (b.key !== 'ahorro' && !ok) detailText += ` <span style="color:${statusColor}"> · te pasas ${fmt(actual-target)}</span>`;
+    let targetText = b.key === 'disponible' ? 'no cuenta en regla' : `objetivo: ${fmt(target)}`;
 
-    if (b.key === 'ahorro') {
-      fill = Math.min(1, ahorroTotalNoConsumido / target);
-      const ahorroRealCumplido = ahorroApartado >= target;
-      const hayMargen = ahorroTotalNoConsumido >= target;
-      statusColor = ahorroRealCumplido ? 'var(--green)' : (hayMargen ? 'var(--yellow)' : 'var(--red)');
-      statusLabel = ahorroRealCumplido ? '✓ Real cumplido' : (hayMargen ? '• Margen disponible' : '⚠ Pendiente');
-      detailText = `${Math.round((ahorroTotalNoConsumido / target) * 100)}% del objetivo · ${modeLabel}`;
+    if (b.key === 'necesidades' || b.key === 'deseos') {
+      const ok = actual <= target;
+      statusColor = ok ? 'var(--green)' : 'var(--red)';
+      statusLabel = ok ? '✓ Bien' : '↑ Te pasas';
+      detailText = `${Math.round(fill*100)}% del objetivo · ${modeLabel}`;
+      if (!ok) detailText += ` <span style="color:${statusColor}"> · te pasas ${fmt(actual-target)}</span>`;
     }
 
-    return `<div style="background:var(--surface2);border-radius:14px;padding:16px;border:1px solid ${statusColor === 'var(--green)' ? 'rgba(91,191,142,.2)' : statusColor === 'var(--yellow)' ? 'rgba(251,191,36,.28)' : 'rgba(224,92,106,.2)'}">
+    if (b.key === 'ahorro') {
+      const cumplido = ahorroReal >= target;
+      const puedeMover = dineroSinGastar >= faltanteAhorro;
+      statusColor = cumplido ? 'var(--green)' : (puedeMover ? 'var(--yellow)' : 'var(--red)');
+      statusLabel = cumplido ? '✓ Cumplido' : (puedeMover ? 'Mover a ahorro' : 'Falta margen');
+      fill = Math.min(1, ahorroReal / target);
+      detailText = cumplido
+        ? `Has apartado ${fmt(ahorroReal)} · objetivo cumplido`
+        : `Has apartado ${fmt(ahorroReal)} · faltan ${fmt(faltanteAhorro)}`;
+    }
+
+    if (b.key === 'disponible') {
+      statusColor = actual > 0 ? 'var(--blue)' : 'var(--red)';
+      statusLabel = actual > 0 ? 'Disponible' : 'Sin margen';
+      detailText = actual > 0
+        ? `Está en la cuenta, pero no es ahorro hasta que lo marques como Ahorro.`
+        : `No queda margen después de gastos y ahorro real.`;
+    }
+
+    return `<div style="background:var(--surface2);border-radius:14px;padding:16px;border:1px solid ${statusColor === 'var(--green)' ? 'rgba(91,191,142,.2)' : statusColor === 'var(--yellow)' ? 'rgba(251,191,36,.28)' : statusColor === 'var(--blue)' ? 'rgba(96,165,250,.28)' : 'rgba(224,92,106,.2)'}">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
         <div style="display:flex;align-items:center;gap:8px">
           <span style="font-size:22px">${b.emoji}</span>
@@ -3141,21 +3188,30 @@ function renderRegla() {
       </div>
       <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
         <div style="font-family:var(--font-mono);font-size:20px;color:${statusColor}">${fmt(actual)}</div>
-        <div style="font-size:12px;color:var(--muted)">objetivo: ${fmt(target)}</div>
+        <div style="font-size:12px;color:var(--muted)">${targetText}</div>
       </div>
       <div class="progress-track" style="height:8px;background:var(--surface);border-radius:99px;overflow:hidden;margin-bottom:8px">
         <div style="height:100%;width:${Math.min(100,fill*100)}%;background:${statusColor};border-radius:99px;transition:width .5s ease"></div>
       </div>
-      <div style="font-size:11px;color:var(--muted)">${detailText}</div>
-      ${b.key === 'deseos' ? `<div style="margin-top:8px;font-size:11px;background:rgba(167,139,250,.08);border-radius:8px;padding:7px 10px;color:var(--muted);line-height:1.5">
-        💡 <strong>¿Qué es un deseo?</strong> Todo lo que podrías no comprar y seguir viviendo: ropa, salir a comer, ocio, caprichos. No es malo gastarlo — la idea es que no supere el 30%.
+      <div style="font-size:11px;color:var(--muted);line-height:1.45">${detailText}</div>
+      ${b.key === 'ahorro' ? `<div style="margin-top:10px;display:grid;gap:8px;font-size:11px;color:var(--muted);line-height:1.45">
+        <div style="background:rgba(52,211,153,.08);border:1px solid rgba(52,211,153,.14);border-radius:10px;padding:9px 10px">
+          <div style="display:flex;justify-content:space-between;gap:10px;align-items:baseline"><span>🏦 <strong>Categorizado como Ahorro</strong></span><span style="font-family:var(--font-mono);color:var(--green);font-size:13px">${fmt(ahorroReal)}</span></div>
+          <div style="margin-top:3px">Esta tarjeta se rellena sumando todos los movimientos con categoría Ahorro. Puedes hacerlo en varias tandas durante el mes.</div>
+        </div>
+        <div style="background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.14);border-radius:10px;padding:9px 10px">
+          <div style="display:flex;justify-content:space-between;gap:10px;align-items:baseline"><span>🟡 <strong>Pendiente de mover</strong></span><span style="font-family:var(--font-mono);color:${faltanteAhorro > 0 ? 'var(--yellow)' : 'var(--green)'};font-size:13px">${fmt(faltanteAhorro)}</span></div>
+          <div style="margin-top:3px">Objetivo del 20%: ${fmt(targets.ahorro)}. Cuando categorices esta cantidad como Ahorro, la barra se completa.</div>
+        </div>
       </div>` : ''}
-      ${b.key === 'ahorro' ? `<div style="margin-top:10px;display:grid;gap:7px;font-size:11px;color:var(--muted);line-height:1.45">
-        <div style="display:flex;justify-content:space-between;gap:10px;background:rgba(52,211,153,.08);border-radius:8px;padding:7px 10px"><span>🏦 <strong>${ahorroDetalleLabel}</strong></span><span style="font-family:var(--font-mono);color:var(--green)">${fmt(ahorroApartado)}</span></div>
-        <div style="display:flex;justify-content:space-between;gap:10px;background:rgba(167,139,250,.08);border-radius:8px;padding:7px 10px"><span>🌙 <strong>Margen no gastado</strong></span><span style="font-family:var(--font-mono)">${fmt(ahorroMargenDisponible)}</span></div>
-        <div style="display:flex;justify-content:space-between;gap:10px;background:rgba(96,165,250,.08);border-radius:8px;padding:7px 10px"><span>✨ <strong>Total no consumido</strong></span><span style="font-family:var(--font-mono)">${fmt(ahorroTotalNoConsumido)}</span></div>
-        <div style="background:rgba(251,191,36,.08);border-radius:8px;padding:7px 10px">
-          💡 Si aparece como <strong>programado</strong>, la app lo toma de tus gastos fijos. Si quieres que sea 100% real, añade o importa el movimiento del traspaso a ahorro con una descripción que contenga “ahorro”.
+      ${b.key === 'disponible' ? `<div style="margin-top:10px;display:grid;gap:8px;font-size:11px;color:var(--muted);line-height:1.45">
+        <div style="background:rgba(96,165,250,.08);border:1px solid rgba(96,165,250,.14);border-radius:10px;padding:9px 10px">
+          <div style="display:flex;justify-content:space-between;gap:10px;align-items:baseline"><span>💜 <strong>Disponible ahora</strong></span><span style="font-family:var(--font-mono);color:var(--blue);font-size:13px">${fmt(dineroSinGastar)}</span></div>
+          <div style="margin-top:3px">Es lo que queda tras necesidades, deseos y ahorro real detectado.</div>
+        </div>
+        <div style="background:rgba(167,139,250,.08);border:1px solid rgba(167,139,250,.14);border-radius:10px;padding:9px 10px">
+          <div style="display:flex;justify-content:space-between;gap:10px;align-items:baseline"><span>✨ <strong>Extra potencial</strong></span><span style="font-family:var(--font-mono);font-size:13px">${fmt(posibleAhorroExtra)}</span></div>
+          <div style="margin-top:3px">Sería ahorro extra solo si decides moverlo a tu cuenta de ahorro y marcarlo como Ahorro.</div>
         </div>
       </div>` : ''}
     </div>`;
@@ -3182,10 +3238,7 @@ function renderRegla() {
     </div>`;
   }).join('');
 
-  // ALERTAS SEMANALES
   renderAlertasSemana(nomina);
-
-  // IMPULSIVO
   renderImpulsivos();
 }
 
@@ -3495,7 +3548,7 @@ function renderEstacionalidad() {
   const byMonth = Array(12).fill(0);
   const countByMonth = Array(12).fill(0);
 
-  transactions.filter(t => t.amount < 0 && t.category !== 'traspaso' && t.category !== 'ingreso').forEach(t => {
+  transactions.filter(t => t.amount < 0 && t.category !== 'traspaso' && t.category !== 'ahorro' && t.category !== 'ingreso').forEach(t => {
     byMonth[t.date.getMonth()] += Math.abs(t.amount);
     countByMonth[t.date.getMonth()]++;
   });
@@ -3561,7 +3614,7 @@ function initDefaultFijos() {
     { name: 'Holiday Gym', amount: 99.00, day: 28, catId: 'salud', emoji: '🏋️' },
     { name: 'Clínica Alma Martínez', amount: 60.00, day: 25, catId: 'salud', emoji: '🦷' },
     { name: 'Pum English', amount: 60.00, day: 3, catId: 'otros', emoji: '🇬🇧' },
-    { name: 'Traspaso → Ahorro', amount: 200.00, day: 28, catId: 'traspaso', emoji: '🏦' },
+    { name: 'Traspaso → Ahorro', amount: 200.00, day: 28, catId: 'ahorro', emoji: '🏦', traspaso: true },
     { name: 'Revolut suscripciones (Claude + Spotify)', amount: 50.00, day: 1, catId: 'traspaso', emoji: '💳' },
   ];
 }
@@ -4486,6 +4539,7 @@ function init() {
   initDefaultLimites();
   initDefaultCuentas();
   loadAppState();
+  ensureAhorroCategory();
   setupAutoSave();
   buildNav();       // build dynamic sortable sidebar
   // Restore last active panel
