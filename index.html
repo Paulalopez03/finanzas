@@ -2576,6 +2576,7 @@ function saveEditTxn() {
   closeModal('modal-edit-txn');
   renderMovimientos();
   renderDashboard();
+  if (document.getElementById('panel-regla')?.classList.contains('active')) renderRegla();
 }
 
 function deleteEditTxn() {
@@ -2588,16 +2589,18 @@ function deleteEditTxn() {
 
 function addManualTxn() {
   const name = document.getElementById('new-txn-name').value;
-  const amount = parseFloat(document.getElementById('new-txn-amount').value);
+  let amount = parseFloat(document.getElementById('new-txn-amount').value);
   const dateVal = document.getElementById('new-txn-date').value;
   const category = document.getElementById('new-txn-cat').value;
   if (!name || isNaN(amount) || !dateVal) return alert('Rellena todos los campos');
+  if (category === 'ahorro') amount = Math.abs(amount);
   const date = new Date(dateVal);
   const id = Date.now();
   transactions.unshift({ id, name, date, amount, category, note:'', manual:true });
   closeModal('modal-add-txn');
   renderMovimientos();
   renderDashboard();
+  if (document.getElementById('panel-regla')?.classList.contains('active')) renderRegla();
 }
 
 function exportCSV() {
@@ -3418,10 +3421,10 @@ function renderRegla() {
     disponible: nomina
   };
 
-  // Ahorro real: solo se llena con movimientos categorizados como "Ahorro".
-  // Así puedes apartar el objetivo en varias tandas: 150€ primero, 140€ después, etc.
+  // Ahorro real: se llena con movimientos categorizados como "Ahorro".
+  // Acepta importes negativos o positivos, porque al meterlo manualmente puedes escribir 103 o -103.
   const isRealSavingsTransfer = (t) => {
-    return t.amount < 0 && t.category === 'ahorro';
+    return t.category === 'ahorro' && Math.abs(Number(t.amount || 0)) > 0;
   };
   const isProgrammedSavings = (f) => {
     const txt = `${f.name || ''}`.toLowerCase();
@@ -3439,7 +3442,7 @@ function renderRegla() {
 
   const ahorroRealDetectado = txnsForSavings
     .filter(isRealSavingsTransfer)
-    .reduce((s,t) => s + Math.abs(t.amount), 0) / divisor;
+    .reduce((s,t) => s + Math.abs(Number(t.amount || 0)), 0) / divisor;
   const ahorroProgramado = fixedExpenses
     .filter(isProgrammedSavings)
     .reduce((s,f) => s + Math.abs(f.amount || 0) / (f.freq || 1), 0);
