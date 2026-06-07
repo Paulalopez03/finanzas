@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="es" data-theme="dark">
 <head>
-
+  
   <link rel="icon" href="icono.png">
 <link rel="apple-touch-icon" href="icono.png">
 <meta name="msapplication-TileImage" content="icono.png">
@@ -4288,11 +4288,13 @@ function init() {
     else autoSyncFromGitHub();
   }, 600);
   // init touch drag on customizer after it's opened
-  document.getElementById('modal-customizer').addEventListener('transitionend', initTouchDrag, { once: true });
+  const _cust = document.getElementById('modal-customizer');
+  if (_cust) _cust.addEventListener('transitionend', initTouchDrag, { once: true });
 
   // Set today as default date for new transactions
   const today = new Date().toISOString().split('T')[0];
-  document.getElementById('new-txn-date').value = today;
+  const _dateEl = document.getElementById('new-txn-date');
+  if (_dateEl) _dateEl.value = today;
 
   // Close modal on overlay click
   document.querySelectorAll('.modal-overlay').forEach(m => {
@@ -4300,7 +4302,11 @@ function init() {
   });
 }
 
-init();
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
 </script>
 
 <!-- ═══ PANEL CUSTOMIZER MODAL ═══ -->
