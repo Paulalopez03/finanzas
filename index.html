@@ -2209,6 +2209,27 @@ function fmtShort(n) {
   return fmt(n);
 }
 
+
+// Saldo actual: se toma de la cuenta principal de Patrimonio y se refresca en sidebar/topbar.
+function getMainCuenta() {
+  if (!Array.isArray(cuentas) || !cuentas.length) return null;
+  return cuentas.find(c => !c.traspaso && c.tipo === 'corriente') || cuentas.find(c => !c.traspaso) || cuentas[0];
+}
+function updateCurrentBalanceDisplay() {
+  const main = getMainCuenta();
+  const saldo = main ? (parseFloat(main.saldo) || 0) : 0;
+  const sb = document.getElementById('sb-balance');
+  const tb = document.getElementById('topbar-balance');
+  if (sb) sb.textContent = fmtShort(saldo);
+  if (tb) tb.textContent = fmtShort(saldo);
+}
+function adjustMainCuentaBalance(amount) {
+  const main = getMainCuenta();
+  if (!main || isNaN(amount)) return;
+  main.saldo = Math.round(((parseFloat(main.saldo) || 0) + amount) * 100) / 100;
+  updateCurrentBalanceDisplay();
+}
+
 function dateLabel(d) {
   return d.toLocaleDateString('es-ES', { day:'2-digit', month:'short', year:'2-digit' });
 }
@@ -2391,8 +2412,8 @@ function renderDashboard() {
     </div>`;
   }).join('');
 
-  // sidebar balance
-  document.getElementById('sb-balance').textContent = fmtShort(11303.05);
+  // sidebar/topbar balance
+  updateCurrentBalanceDisplay();
   applyDashboardVisibility();
 }
 
@@ -2581,7 +2602,9 @@ function saveEditTxn() {
 
 function deleteEditTxn() {
   if (!confirm('¿Eliminar este movimiento?')) return;
+  const deletedTxn = transactions.find(t => t.id === editingIdx);
   transactions = transactions.filter(t => t.id !== editingIdx);
+  if (deletedTxn && deletedTxn.manual) adjustMainCuentaBalance(-deletedTxn.amount);
   closeModal('modal-edit-txn');
   renderMovimientos();
   renderDashboard();
@@ -2596,7 +2619,9 @@ function addManualTxn() {
   if (category === 'ahorro') amount = Math.abs(amount);
   const date = new Date(dateVal);
   const id = Date.now();
-  transactions.unshift({ id, name, date, amount, category, note:'', manual:true });
+  const txn = { id, name, date, amount, category, note:'', manual:true };
+  transactions.unshift(txn);
+  adjustMainCuentaBalance(amount);
   closeModal('modal-add-txn');
   renderMovimientos();
   renderDashboard();
@@ -3194,6 +3219,7 @@ function renderPatrimonio() {
   const totalAll = cuentas.reduce((s, c) => s + c.saldo, 0);
 
   document.getElementById('pat-total').textContent = fmt(total);
+  updateCurrentBalanceDisplay();
 
   // Emergency fund: based on avg monthly spending
   const txns3 = filterPeriod(transactions, 3).filter(t => t.amount < 0 && t.category !== 'traspaso');
@@ -4063,7 +4089,7 @@ function confirmClaudeImport() {
       const [y,m,d] = (t.date || new Date().toISOString().split('T')[0]).split('-');
       const date = new Date(parseInt(y), parseInt(m)-1, parseInt(d));
       const category = autoCategory(t.name, t.amount);
-      transactions.unshift({
+      const txn = {
         id: Date.now() + added,
         name: t.name || 'Importado',
         amount: parseFloat(t.amount) || 0,
@@ -4072,7 +4098,9 @@ function confirmClaudeImport() {
         note: t.note || '🤖 Importado desde Claude',
         impulsivo: false,
         manual: true
-      });
+      };
+      transactions.unshift(txn);
+      adjustMainCuentaBalance(txn.amount);
       added++;
     } catch(e) { console.warn('Error importing', t, e); }
   });
@@ -4382,6 +4410,7 @@ async function autoSyncFromGitHub() {
           manual: true
         };
         transactions.unshift(txn);
+        adjustMainCuentaBalance(txn.amount);
         // Also build CSV line to embed in HTML
         const dd = String(dateObj.getDate()).padStart(2,'0');
         const mm = String(dateObj.getMonth()+1).padStart(2,'0');
@@ -4783,6 +4812,7 @@ function setupAutoSave() {
     window[name] = function(...args) {
       const result = original.apply(this, args);
       saveAppState();
+      updateCurrentBalanceDisplay();
       // Debounced GitHub sync — waits 2s after last change before uploading
       clearTimeout(window._ghSaveTimer);
       window._ghSaveTimer = setTimeout(saveToGitHub, 2000);
@@ -4955,6 +4985,7 @@ function init() {
   loadReglaPrefs();
   loadUIPrefsNow();
   setupUIPrefsAutosave();
+  updateCurrentBalanceDisplay();
   // Restore last active panel and its visual filters
   const _prefs = readUIPrefs();
   const _lastPanel = _prefs.lastPanel || localStorage.getItem(LAST_PANEL_KEY);
