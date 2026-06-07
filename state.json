@@ -1,1 +1,420 @@
-[]
+{
+  "categories": [
+    {
+      "id": "supermercado",
+      "name": "Supermercado",
+      "emoji": "🛒",
+      "color": "#5bbf8e",
+      "keywords": [
+        "mercadona",
+        "dialprix",
+        "lidl",
+        "aldi",
+        "consum",
+        "dia 1582",
+        "hiperber",
+        "el ahorro",
+        "carrefour",
+        "alcampo",
+        "eroski",
+        "hipercor",
+        "supersol",
+        "ahorramas",
+        "spar",
+        "covirán",
+        "condis",
+        "bonpreu",
+        "supeco",
+        "simply",
+        "gadis",
+        "dia "
+      ]
+    },
+    {
+      "id": "restaurantes",
+      "name": "Cafeterías y restaurantes",
+      "emoji": "☕",
+      "color": "#e8976a",
+      "keywords": [
+        "cafeteria",
+        "cafe ",
+        "kafe",
+        "cofee",
+        "coffee",
+        "cafes ",
+        "bistrea",
+        "enfasis",
+        "kaffekos",
+        "macadamia",
+        "boutique del cafe",
+        "la gatera",
+        "raco de joan",
+        "mas que migas",
+        "cafeteria dali",
+        "panaderia",
+        "espiga",
+        "soberana",
+        "la faeneta",
+        "tahona",
+        "bolleria",
+        "horno ",
+        "pasteleria",
+        "delicias",
+        "restaurant",
+        "ramen",
+        "pizzeria",
+        "ginos",
+        "barabacoa",
+        "nayma",
+        "mestizaje",
+        "valholl",
+        "banderas",
+        "BK14",
+        "burger",
+        "taco bell",
+        "mcdonalds",
+        "asiatico",
+        "vezzo",
+        "kebap",
+        "kebab",
+        "doner",
+        "shawarma",
+        "sweetea",
+        "haagen",
+        "candy",
+        "bombon",
+        "llaollao",
+        "heladeria",
+        "gelateria",
+        "nyx",
+        "cocteleria",
+        "telepizza",
+        "dominos",
+        "just eat",
+        "glovo",
+        "uber eats",
+        "deliveroo",
+        "click and plan",
+        "hagen-dazs",
+        "oh my sweetea",
+        "el candil"
+      ]
+    },
+    {
+      "id": "ropa",
+      "name": "Ropa y moda",
+      "emoji": "👗",
+      "color": "#e05c6a",
+      "keywords": [
+        "stradivarius",
+        "bershka",
+        "pull and bear",
+        "primark",
+        "zara",
+        "lefties",
+        "laljub",
+        "h&m",
+        "deichmann",
+        "mayoral",
+        "tienda3",
+        "cortefiel",
+        "springfield",
+        "mango",
+        "shein",
+        "asos",
+        "nike ",
+        "adidas ",
+        "decathlon",
+        "fnac",
+        "el corte ingles moda",
+        "calzedonia",
+        "women secret",
+        "intimissimi",
+        "oysho",
+        "massimo dutti"
+      ]
+    },
+    {
+      "id": "salud",
+      "name": "Salud y farmacia",
+      "emoji": "💊",
+      "color": "#a78bfa",
+      "keywords": [
+        "farmacia",
+        "clinica",
+        "druni",
+        "samuel asensio",
+        "dentista",
+        "medico",
+        "optica",
+        "fisioter",
+        "psicolog",
+        "nutricion",
+        "laborator",
+        "clinica alma",
+        "centro medico",
+        "parafarmacia",
+        "ortopedia",
+        "sanitas",
+        "adeslas",
+        "generali salud"
+      ]
+    },
+    {
+      "id": "transporte",
+      "name": "Transporte",
+      "emoji": "🚌",
+      "color": "#6aade8",
+      "keywords": [
+        "avanza",
+        "renfe",
+        "subus",
+        "metropolitano",
+        "e110 elche",
+        "autob",
+        "taxi",
+        "cabify",
+        "uber",
+        "bolt",
+        "blablacar",
+        "ryanair",
+        "vueling",
+        "iberia",
+        "easyjet",
+        "renfe cercanias",
+        "metro ",
+        "parking",
+        "aparcamiento",
+        "gasolinera",
+        "repsol",
+        "bp ",
+        "cepsa",
+        "shell ",
+        "valcarce"
+      ]
+    },
+    {
+      "id": "ocio",
+      "name": "Ocio y cultura",
+      "emoji": "🎭",
+      "color": "#c86ae8",
+      "keywords": [
+        "cines",
+        "casa del libro",
+        "libreria",
+        "fnac",
+        "once",
+        "decolores",
+        "galeria del pi",
+        "copisteria",
+        "dabel",
+        "museo",
+        "teatro",
+        "concierto",
+        "ticketmaster",
+        "eventbrite",
+        "planetarium",
+        "parque ",
+        "warner",
+        "portaventura",
+        "bowling",
+        "escape room",
+        "laser ",
+        "karting",
+        "feria",
+        "atraccion"
+      ]
+    },
+    {
+      "id": "belleza",
+      "name": "Belleza y cuidado personal",
+      "emoji": "✨",
+      "color": "#fbbf24",
+      "keywords": [
+        "druni",
+        "samuel asensio",
+        "peluqueria",
+        "estetica",
+        "salon",
+        "spa ",
+        "depilacion",
+        "nail",
+        "unas ",
+        "masaje",
+        "perfumer",
+        "sephora",
+        "primor",
+        "bodybell",
+        "mercadona belleza"
+      ]
+    },
+    {
+      "id": "hogar",
+      "name": "Hogar",
+      "emoji": "🏠",
+      "color": "#60a5fa",
+      "keywords": [
+        "ikea",
+        "leroy merlin",
+        "bricor",
+        "bricomart",
+        "el corte ingles hogar",
+        "zara home",
+        "casa ",
+        "kiwoko",
+        "animals",
+        "tiendanimal",
+        "amazon",
+        "aliexpress",
+        "correos",
+        "el corte ingles"
+      ]
+    },
+    {
+      "id": "fijo_banco",
+      "name": "Cuotas fijas",
+      "emoji": "🏦",
+      "color": "#8a8499",
+      "keywords": [
+        "caixabank paym",
+        "holiday gym",
+        "pum english"
+      ]
+    },
+    {
+      "id": "sin_cat",
+      "name": "Sin clasificar ⚠️",
+      "emoji": "❓",
+      "color": "#f59e0b",
+      "keywords": []
+    },
+    {
+      "id": "bizum",
+      "name": "Bizum enviado",
+      "emoji": "💸",
+      "color": "#fb7185",
+      "keywords": []
+    },
+    {
+      "id": "ingreso",
+      "name": "Ingresos",
+      "emoji": "💰",
+      "color": "#34d399",
+      "keywords": [
+        "nomina",
+        "transf. a su favor",
+        "transfer inmediata",
+        "bizum recibido",
+        "reintegro",
+        "transferencia recibida",
+        "samsungapps",
+        "paypal transferencia"
+      ]
+    },
+    {
+      "id": "traspaso",
+      "name": "Traspaso (movimiento interno)",
+      "emoji": "🔄",
+      "color": "#94a3b8",
+      "keywords": [
+        "revolut**",
+        "revolut**0017*",
+        "revolut**8034*"
+      ]
+    },
+    {
+      "id": "otros",
+      "name": "Otros",
+      "emoji": "📦",
+      "color": "#6b7280",
+      "keywords": []
+    }
+  ],
+  "fixedExpenses": [
+    {
+      "name": "CaixaBank cuota",
+      "amount": 195.6,
+      "day": 1,
+      "catId": "fijo_banco",
+      "emoji": "🏦"
+    },
+    {
+      "name": "Holiday Gym",
+      "amount": 99,
+      "day": 28,
+      "freq": 3,
+      "catId": "belleza",
+      "emoji": "🏋️",
+      "traspaso": false
+    },
+    {
+      "name": "Traspaso → Ahorro",
+      "amount": 200,
+      "day": 28,
+      "catId": "traspaso",
+      "emoji": "🏦"
+    },
+    {
+      "name": "Revolut suscripciones (Claude + Spotify)",
+      "amount": 50,
+      "day": 1,
+      "catId": "traspaso",
+      "emoji": "💳"
+    }
+  ],
+  "limits": [
+    {
+      "catId": "restaurantes",
+      "amount": 150
+    },
+    {
+      "catId": "ropa",
+      "amount": 100
+    }
+  ],
+  "savingGoals": [],
+  "cuentas": [
+    {
+      "id": 1,
+      "name": "imagin (cuenta principal)",
+      "saldo": 11303.05,
+      "tipo": "corriente",
+      "rent": 0,
+      "emoji": "💜",
+      "traspaso": false
+    },
+    {
+      "id": 2,
+      "name": "Cuenta de ahorro 2",
+      "saldo": 2600,
+      "tipo": "ahorro",
+      "rent": 1.25,
+      "emoji": "🏦",
+      "traspaso": false
+    },
+    {
+      "id": 3,
+      "name": "Revolut (suscripciones)",
+      "saldo": 50,
+      "tipo": "corriente",
+      "rent": 0,
+      "emoji": "💳",
+      "traspaso": true,
+      "presupuesto": 50
+    }
+  ],
+  "retos": [],
+  "manualTxns": [
+    {
+      "id": 1780855327717,
+      "name": "Ropa",
+      "amount": -60,
+      "date": "2026-06-06T22:00:00.000Z",
+      "category": "ropa",
+      "note": "🤖 Añadido por Claude",
+      "impulsivo": false,
+      "manual": true
+    }
+  ],
+  "lastUpdated": "2026-06-07T18:02:09.824Z"
+}
