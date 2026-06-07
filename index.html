@@ -437,6 +437,46 @@
   @media (max-width: 768px) {
     .regla-buckets-grid { grid-template-columns: 1fr 1fr !important; }
   }
+
+
+  /* ── FIX RESPONSIVE REGLA 50/30/20 ── */
+  #panel-regla, #panel-regla * { min-width: 0; }
+  #panel-regla { overflow-x: hidden; }
+  .regla-buckets-grid { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+  @media (max-width: 1100px) {
+    .regla-buckets-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  }
+  @media (max-width: 768px) {
+    html, body { overflow-x: hidden !important; }
+    #panel-regla .page-header {
+      flex-direction: column !important;
+      align-items: stretch !important;
+      gap: 12px !important;
+    }
+    #panel-regla .page-header select,
+    #regla-period,
+    #regla-nomina-input {
+      width: 100% !important;
+      max-width: 100% !important;
+    }
+    #panel-regla .card {
+      overflow-x: visible !important;
+      max-width: 100% !important;
+    }
+    #regla-buckets.regla-buckets-grid,
+    .regla-buckets-grid {
+      grid-template-columns: 1fr !important;
+      width: 100% !important;
+      max-width: 100% !important;
+      gap: 12px !important;
+    }
+    #regla-cats-area.grid-3 { grid-template-columns: 1fr !important; }
+    #panel-regla .card > div[style*="justify-content:space-between"] {
+      flex-wrap: wrap !important;
+      gap: 12px !important;
+    }
+  }
+
 </style>
 </head>
 <body>
@@ -868,7 +908,7 @@
         <div class="page-title">Regla 50/30/20</div>
         <div class="page-subtitle">¿Tu dinero está bien repartido?</div>
       </div>
-      <select id="regla-period" onchange="renderRegla()" style="width:auto">
+      <select id="regla-period" onchange="saveReglaPrefs();renderRegla()" style="width:auto">
         <option value="0">Mes actual (del 1 al hoy)</option>
         <option value="1">Último mes completo</option>
         <option value="3" selected>Media 3 meses</option>
@@ -885,11 +925,11 @@
         </div>
         <div style="text-align:right">
           <label style="display:block;margin-bottom:6px">Ajusta tu nómina</label>
-          <input type="number" id="regla-nomina-input" value="1452.66" step="1" style="width:160px;text-align:right" oninput="renderRegla()">
+          <input type="number" id="regla-nomina-input" value="1452.66" step="1" style="width:160px;text-align:right" oninput="saveReglaPrefs();renderRegla()">
         </div>
       </div>
       <div id="regla-intro-box"></div>
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px" id="regla-buckets" class="regla-buckets-grid"></div>
+        <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px" id="regla-buckets" class="regla-buckets-grid"></div>
     </div>
 
     <!-- CATEGORÍAS POR BUCKET -->
@@ -3048,6 +3088,7 @@ function getBucket(catId) {
 function renderRegla() {
   const months = parseInt(document.getElementById('regla-period').value);
   const nomina = parseFloat(document.getElementById('regla-nomina-input').value) || 1452.66;
+  saveReglaPrefs();
   document.getElementById('regla-nomina').textContent = fmt(nomina);
 
   // months=0 means current calendar month (1st to today)
@@ -4386,6 +4427,8 @@ function copyProjectPrompt() {
 
 const APP_STATE_KEY = 'paula_finance_app_state_v2';
 const DASH_PREF_KEY = 'paula_dashboard_period';
+const REGLA_PREF_KEY = 'paula_regla_period';
+const REGLA_NOMINA_KEY = 'paula_regla_nomina';
 const LAST_PANEL_KEY = 'paula_last_panel';
 const DASH_HIDDEN_KEY = 'paula_dashboard_hidden_fields';
 const DASH_FIELDS = [
@@ -4480,6 +4523,21 @@ function loadDashPrefs() {
   const saved = localStorage.getItem(DASH_PREF_KEY);
   if (el && saved && [...el.options].some(o => o.value === saved)) el.value = saved;
 }
+
+function saveReglaPrefs() {
+  const periodEl = document.getElementById('regla-period');
+  const nominaEl = document.getElementById('regla-nomina-input');
+  if (periodEl) localStorage.setItem(REGLA_PREF_KEY, periodEl.value);
+  if (nominaEl) localStorage.setItem(REGLA_NOMINA_KEY, nominaEl.value);
+}
+function loadReglaPrefs() {
+  const periodEl = document.getElementById('regla-period');
+  const nominaEl = document.getElementById('regla-nomina-input');
+  const savedPeriod = localStorage.getItem(REGLA_PREF_KEY);
+  const savedNomina = localStorage.getItem(REGLA_NOMINA_KEY);
+  if (periodEl && savedPeriod && [...periodEl.options].some(o => o.value === savedPeriod)) periodEl.value = savedPeriod;
+  if (nominaEl && savedNomina !== null && savedNomina !== '') nominaEl.value = savedNomina;
+}
 function getHiddenDashboardFields() {
   try { return new Set(JSON.parse(localStorage.getItem(DASH_HIDDEN_KEY) || '[]')); }
   catch(e) { return new Set(); }
@@ -4542,6 +4600,8 @@ function init() {
   ensureAhorroCategory();
   setupAutoSave();
   buildNav();       // build dynamic sortable sidebar
+  loadDashPrefs();
+  loadReglaPrefs();
   // Restore last active panel
   const _lastPanel = localStorage.getItem(LAST_PANEL_KEY);
   if (_lastPanel && document.getElementById('panel-' + _lastPanel)) {
@@ -4550,6 +4610,7 @@ function init() {
   populateModalSelects();
   populateMonthFilter();
   loadDashPrefs();
+  loadReglaPrefs();
   renderDashboard();
   // Auto-sync from GitHub on startup
   setTimeout(() => {
