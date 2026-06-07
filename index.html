@@ -4383,6 +4383,33 @@ function initTouchDrag() {
 // ═══════════════════════════════════════════════════════════════════
 
 const GH_CONFIG_KEY = 'paula_gh_config';
+let _syncPullTimer = null;
+let _syncPushTimer = null;
+let _isSyncingNow = false;
+
+function renderActivePanelAfterSync() {
+  const active = document.querySelector('.panel.active');
+  if (!active) { renderDashboard(); return; }
+  const id = active.id.replace('panel-', '');
+  if (id === 'dashboard') renderDashboard();
+  else if (id === 'movimientos') renderMovimientos();
+  else if (id === 'categorias') renderCategorias();
+  else if (id === 'fijos') renderFijos();
+  else if (id === 'limites') renderLimites();
+  else if (id === 'ahorro') renderAhorro();
+  else if (id === 'prediccion') renderPrediccion();
+  else if (id === 'analisis') renderAnalisis();
+  else if (id === 'patrimonio') renderPatrimonio();
+  else if (id === 'regla') renderRegla();
+  else if (id === 'retos') renderRetos();
+  else if (id === 'inversion') renderInversion();
+  updateCurrentBalanceDisplay();
+}
+
+function scheduleGitHubPush(delay = 1200) {
+  clearTimeout(_syncPushTimer);
+  _syncPushTimer = setTimeout(saveToGitHub, delay);
+}
 
 function loadGHConfig() {
   try { return JSON.parse(localStorage.getItem(GH_CONFIG_KEY) || 'null'); }
@@ -4411,6 +4438,8 @@ async function autoSyncFromGitHub() {
     updateSyncBadge('none');
     return;
   }
+  if (_isSyncingNow) return;
+  _isSyncingNow = true;
 
   updateSyncBadge('syncing');
 
@@ -4420,10 +4449,17 @@ async function autoSyncFromGitHub() {
 
     // ── Step 2: Read pending.json (new movements from Claude) ──
     const pending = await readFileFromGitHub(cfg, 'pending.json');
-    if (!pending) { updateSyncBadge('empty'); return; }
+    if (!pending) {
+      saveAppState();
+      renderActivePanelAfterSync();
+      updateSyncBadge('empty');
+      return;
+    }
 
     const items = pending.items;
     if (!Array.isArray(items) || items.length === 0) {
+      saveAppState();
+      renderActivePanelAfterSync();
       updateSyncBadge('empty');
       return;
     }
@@ -4477,6 +4513,8 @@ async function autoSyncFromGitHub() {
   } catch(e) {
     console.warn('GitHub sync failed:', e);
     updateSyncBadge('error', 0, e.message);
+  } finally {
+    _isSyncingNow = false;
   }
 }
 
@@ -4579,7 +4617,17 @@ async function pushStateToGitHub(cfg) {
     lastUpdated: new Date().toISOString()
   };
 
-  await writeFileToGitHub(cfg, 'state.json', JSON.stringify(state, null, 2), sha, '💾 Sync state from app');
+  try {
+    await writeFileToGitHub(cfg, 'state.json', JSON.stringify(state, null, 2), sha, '💾 Sync state from app');
+  } catch(e) {
+    // If another device updated the file at the same time, retry once with the latest SHA.
+    if (String(e.message || '').includes('409')) {
+      const latest = await readFileFromGitHub(cfg, 'state.json');
+      await writeFileToGitHub(cfg, 'state.json', JSON.stringify(state, null, 2), latest ? latest.sha : null, '💾 Sync state from app');
+    } else {
+      throw e;
+    }
+  }
   console.log('✅ State pushed to GitHub');
 }
 
@@ -4608,12 +4656,18 @@ async function embedCsvLinesInHTML(cfg, newLines) {
 // ── Save state to GitHub (called after user makes changes) ──
 async function saveToGitHub() {
   const cfg = loadGHConfig();
-  if (!cfg || !cfg.token) return; // no config, skip silently
+  if (!cfg || !cfg.owner || !cfg.repo || !cfg.token) {
+    updateSyncBadge('none');
+    return;
+  }
+  if (_isSyncingNow) { scheduleGitHubPush(1800); return; }
   try {
+    updateSyncBadge('syncing');
     await pushStateToGitHub(cfg);
     updateSyncBadge('empty'); // shows "connected, up to date"
   } catch(e) {
     console.warn('saveToGitHub failed:', e);
+    updateSyncBadge('error', 0, 'No se pudo subir a GitHub');
   }
 }
 
@@ -4635,7 +4689,7 @@ async function clearPendingJSON(cfg, sha) {
 
 function updateSyncBadge(state, count, errMsg) {
   const map = {
-    none:    { color: 'var(--muted)',  text: '— No conectado · pulsa 🔗', short: '—' },
+    none:    { color: 'var(--muted)',  text: '— Solo este dispositivo · pulsa 🔗', short: '—' },
     syncing: { color: 'var(--yellow)', text: '⏳ Comprobando…',            short: '⏳' },
     ok:      { color: 'var(--green)',  text: `✅ ${count} movimiento${count>1?'s':''} importados`, short: `+${count}` },
     empty:   { color: 'var(--green)',  text: '✓ Conectado · todo al día',  short: '✓' },
@@ -4704,6 +4758,7 @@ function saveGHConfigForm() {
   saveGHConfig({ owner, repo, token });
   closeGHConfig();
   showToast('✅ Configuración guardada — sincronizando…');
+  setupCrossDeviceSync();
   setTimeout(autoSyncFromGitHub, 500);
 }
 
@@ -4852,9 +4907,8 @@ function setupAutoSave() {
       const result = original.apply(this, args);
       saveAppState();
       updateCurrentBalanceDisplay();
-      // Debounced GitHub sync — waits 2s after last change before uploading
-      clearTimeout(window._ghSaveTimer);
-      window._ghSaveTimer = setTimeout(saveToGitHub, 2000);
+      // Debounced GitHub sync — waits a moment after last change before uploading
+      scheduleGitHubPush(1200);
       return result;
     };
     window[name]._autosaveWrapped = true;
@@ -5006,6 +5060,22 @@ function setupUIPrefsAutosave() {
   window.addEventListener('beforeunload', saveUIPrefsNow);
 }
 
+function setupCrossDeviceSync() {
+  const cfg = loadGHConfig();
+  if (!cfg || !cfg.owner || !cfg.repo || !cfg.token) {
+    updateSyncBadge('none');
+    return;
+  }
+  clearInterval(_syncPullTimer);
+  _syncPullTimer = setInterval(() => {
+    if (document.visibilityState === 'visible') autoSyncFromGitHub();
+  }, 30000);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') autoSyncFromGitHub();
+  });
+  window.addEventListener('focus', () => autoSyncFromGitHub());
+}
+
 function init() {
   initTheme();
   transactions = parseCSV();
@@ -5040,6 +5110,7 @@ function init() {
       updateSyncBadge('none');
     } else {
       autoSyncFromGitHub(); // pulls state.json + pending.json
+      setupCrossDeviceSync(); // keeps phone/computer in sync while the app is open
     }
   }, 800);
   // init touch drag on customizer after it's opened
