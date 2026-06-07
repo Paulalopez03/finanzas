@@ -484,7 +484,7 @@
 <!-- SIDEBAR -->
 <aside id="sidebar">
   <div class="logo">Paula<i>·</i>€<span>Gestor financiero</span></div>
-  <nav>
+  <nav id="sortable-nav">
     <div class="nav-item active" onclick="showPanel('dashboard')"><span class="nav-icon">🏠</span>Dashboard</div>
     <div class="nav-item" onclick="showPanel('movimientos')"><span class="nav-icon">↕️</span>Movimientos</div>
     <div class="nav-item" onclick="showPanel('categorias')"><span class="nav-icon">🏷️</span>Categorías</div>
@@ -536,35 +536,36 @@
         <div class="page-title">Hola, Paula 👋</div>
         <div class="page-subtitle" id="dash-subtitle">Cargando datos…</div>
       </div>
-      <div style="display:flex;gap:10px">
-        <select id="dash-period" onchange="renderDashboard()" style="width:auto">
-          <option value="1">Este mes</option>
-          <option value="3">Últimos 3 meses</option>
-          <option value="6">Últimos 6 meses</option>
-          <option value="12" selected>Último año</option>
-          <option value="0">Todo</option>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <select id="dash-period" onchange="saveDashPrefs();renderDashboard()" style="width:auto">
+          <option value="month_start" selected>Desde inicio de mes</option>
+          <option value="last_30">Últimos 30 días</option>
+          <option value="last_90">Últimos 90 días</option>
+          <option value="last_365">Último año</option>
+          <option value="all">Todo</option>
         </select>
+        <button class="btn btn-secondary btn-sm" onclick="openDashboardCustomizer()">⚙️ Dashboard</button>
       </div>
     </div>
 
     <!-- STAT CARDS -->
     <div class="grid grid-4" style="margin-bottom:20px">
-      <div class="card stat">
+      <div class="card stat" data-dash-field="gastos">
         <div class="stat-label">Gastos período</div>
         <div class="stat-value" id="d-gastos" style="color:var(--red)">—</div>
         <div class="stat-sub" id="d-gastos-sub">—</div>
       </div>
-      <div class="card stat">
+      <div class="card stat" data-dash-field="ingresos">
         <div class="stat-label">Ingresos período</div>
         <div class="stat-value" id="d-ingresos" style="color:var(--green)">—</div>
         <div class="stat-sub" id="d-ingresos-sub">—</div>
       </div>
-      <div class="card stat">
+      <div class="card stat" data-dash-field="balance">
         <div class="stat-label">Balance neto</div>
         <div class="stat-value" id="d-balance">—</div>
         <div class="stat-sub" id="d-balance-sub">—</div>
       </div>
-      <div class="card stat">
+      <div class="card stat" data-dash-field="daily">
         <div class="stat-label">Gasto diario medio</div>
         <div class="stat-value" id="d-daily">—</div>
         <div class="stat-sub" id="d-daily-sub">—</div>
@@ -572,15 +573,15 @@
     </div>
 
     <!-- ALERTS -->
-    <div id="dash-alerts"></div>
+    <div id="dash-alerts" data-dash-field="alerts"></div>
 
     <!-- CHARTS ROW -->
     <div class="grid grid-2" style="margin-bottom:20px">
-      <div class="card">
+      <div class="card" data-dash-field="bar_chart">
         <div class="card-title">Gastos por mes</div>
         <div id="bar-chart-area"></div>
       </div>
-      <div class="card">
+      <div class="card" data-dash-field="donut">
         <div class="card-title">Distribución por categoría</div>
         <div style="display:flex;align-items:center;gap:20px">
           <div class="donut-wrap">
@@ -596,7 +597,7 @@
     </div>
 
     <!-- RECENT TRANSACTIONS -->
-    <div class="card">
+    <div class="card" data-dash-field="recent">
       <div class="card-title" style="display:flex;justify-content:space-between">
         <span>Últimos movimientos</span>
         <span style="cursor:pointer;color:var(--accent2);font-size:12px" onclick="showPanel('movimientos')">Ver todos →</span>
@@ -1020,7 +1021,7 @@
       <div class="modal-title">Añadir movimiento</div>
       <button class="modal-close" onclick="closeModal('modal-add-txn')">×</button>
     </div>
-    <div class="form-group"><label>Concepto</label><input type="text" id="new-txn-name" placeholder="Descripción"></div>
+    <div class="form-group"><label>Concepto</label><input type="text" id="new-txn-name" placeholder="Descripción" oninput="liveAutocat()"></div>
     <div class="form-row">
       <div class="form-group"><label>Importe (€)</label><input type="number" id="new-txn-amount" placeholder="-25.00" step="0.01"></div>
       <div class="form-group"><label>Fecha</label><input type="date" id="new-txn-date"></div>
@@ -1236,6 +1237,22 @@ Reglas:
       </select>
     </div>
     <button class="btn btn-primary" style="width:100%" onclick="addCuenta()">Añadir</button>
+  </div>
+</div>
+
+<!-- Dashboard customizer -->
+<div class="modal-overlay" id="modal-dashboard-customizer">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Personalizar dashboard</div>
+      <button class="modal-close" onclick="closeModal('modal-dashboard-customizer')">×</button>
+    </div>
+    <div style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:16px">Elige qué bloques quieres ver en el inicio. Se guarda para la próxima vez que abras la app.</div>
+    <div id="dashboard-customizer-list" style="display:flex;flex-direction:column;gap:10px"></div>
+    <div style="display:flex;gap:10px;margin-top:18px">
+      <button class="btn btn-secondary" onclick="resetDashboardFields()">Restablecer</button>
+      <button class="btn btn-primary" style="flex:1" onclick="closeModal('modal-dashboard-customizer')">Guardar</button>
+    </div>
   </div>
 </div>
 
@@ -1837,18 +1854,14 @@ function autoCategory(name, amount) {
 }
 
 function liveAutocat() {
-  const name = document.getElementById('txn-name').value;
-  const catSel = document.getElementById('txn-cat');
-  const hint = document.getElementById('autocat-hint');
-  const hintName = document.getElementById('autocat-hint-name');
-  if (!name || name.length < 3) { if (hint) hint.style.display = 'none'; return; }
-  const suggested = autoCategory(name, -1);
-  if (catSel) catSel.value = suggested;
-  if (hint && hintName) {
-    const cat = getCat(suggested);
-    hintName.textContent = cat.emoji + ' ' + cat.name;
-    hint.style.display = 'block';
-  }
+  const nameEl = document.getElementById('new-txn-name');
+  const amountEl = document.getElementById('new-txn-amount');
+  const catSel = document.getElementById('new-txn-cat');
+  if (!nameEl || !catSel) return;
+  const name = nameEl.value || '';
+  if (name.length < 3) return;
+  const amount = parseFloat(amountEl?.value || '-1');
+  catSel.value = autoCategory(name, isNaN(amount) ? -1 : amount);
 }
 
 function getCat(id) {
@@ -1925,6 +1938,8 @@ function showPanel(id) {
 
 function openModal(id) {
   populateModalSelects();
+  if (id === 'modal-add-cuenta' && editingCuentaId === null) resetCuentaModal();
+  if (id === 'modal-add-fijo' && editingFijoIndex === null) resetFijoModal();
   document.getElementById(id).classList.add('open');
 }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
@@ -1958,20 +1973,17 @@ function populateModalSelects() {
 // ═══════════════════════════════════════════════════════════════════
 
 function renderDashboard() {
-  const months = parseInt(document.getElementById('dash-period').value);
-  const txns = filterPeriod(transactions, months);
+  const period = document.getElementById('dash-period').value || 'month_start';
+  const { txns, label, days } = filterDashboardPeriod(transactions, period);
   const gastos = txns.filter(t => t.amount < 0 && t.category !== 'ingreso' && t.category !== 'traspaso');
   const ingresos = txns.filter(t => t.amount > 0 && t.category !== 'traspaso');
   const totalGasto = gastos.reduce((s,t) => s + Math.abs(t.amount), 0);
   const totalIngreso = ingresos.reduce((s,t) => s + t.amount, 0);
   const balance = totalIngreso - totalGasto;
-  const days = txns.length > 0
-    ? Math.max(1, Math.ceil((txns[0].date - txns[txns.length-1].date) / 86400000))
-    : 30;
-  const daily = totalGasto / days;
+  const daily = totalGasto / Math.max(1, days);
 
-  const label = months === 0 ? 'Todo el período' : `Últimos ${months} meses`;
   document.getElementById('dash-subtitle').textContent = label + ' · ' + txns.length + ' movimientos';
+  saveDashPrefs();
 
   document.getElementById('d-gastos').textContent = fmt(totalGasto);
   document.getElementById('d-ingresos').textContent = fmt(totalIngreso);
@@ -2045,7 +2057,9 @@ function renderDashboard() {
 
   // sidebar balance
   document.getElementById('sb-balance').textContent = fmtShort(11303.05);
+  applyDashboardVisibility();
 }
+
 
 function renderDonut(txns) {
   const gastos = txns.filter(t => t.amount < 0 && t.category !== 'ingreso');
@@ -2107,7 +2121,7 @@ function renderAlerts() {
   let extra = '';
   if (uncatTxns.length > 0) {
     const uncatAmt = uncatTxns.reduce((s,t) => s+Math.abs(t.amount), 0);
-    extra = `<div onclick="go('movimientos')" style="background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:12px;padding:12px 16px;margin-bottom:8px;cursor:pointer;display:flex;gap:10px;align-items:flex-start">
+    extra = `<div onclick="showPanel('movimientos')" style="background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:12px;padding:12px 16px;margin-bottom:8px;cursor:pointer;display:flex;gap:10px;align-items:flex-start">
       <span style="font-size:18px;flex-shrink:0">❓</span>
       <div>
         <div style="font-weight:600;color:#f59e0b;font-size:13px">${uncatTxns.length} Bizum${uncatTxns.length>1?'s':''} sin clasificar — ${fmt(uncatAmt)} en total</div>
@@ -2311,6 +2325,7 @@ function editCategory(i) {
     transactions.forEach(t => { t.category = autoCategory(t.name, t.amount); });
     closeModal('modal-add-cat');
     renderCategorias();
+    saveAppState();
     document.querySelector('#modal-add-cat .btn-primary').onclick = addCategory;
   };
 }
@@ -2318,6 +2333,32 @@ function editCategory(i) {
 // ═══════════════════════════════════════════════════════════════════
 //  GASTOS FIJOS
 // ═══════════════════════════════════════════════════════════════════
+
+let editingFijoIndex = null;
+function editFijo(i) {
+  const f = fixedExpenses[i];
+  if (!f) return;
+  editingFijoIndex = i;
+  document.getElementById('fijo-name').value = f.name || '';
+  document.getElementById('fijo-amount').value = f.amount || 0;
+  document.getElementById('fijo-day').value = f.day || 1;
+  document.getElementById('fijo-freq').value = f.freq || 1;
+  document.getElementById('fijo-cat').value = f.catId || 'otros';
+  document.getElementById('fijo-emoji').value = f.emoji || '📌';
+  document.getElementById('fijo-traspaso').value = f.traspaso ? '1' : '0';
+  const title = document.querySelector('#modal-add-fijo .modal-title');
+  const btn = document.querySelector('#modal-add-fijo .btn-primary');
+  if (title) title.textContent = 'Editar gasto fijo';
+  if (btn) btn.textContent = 'Guardar cambios';
+  openModal('modal-add-fijo');
+}
+function resetFijoModal() {
+  editingFijoIndex = null;
+  const title = document.querySelector('#modal-add-fijo .modal-title');
+  const btn = document.querySelector('#modal-add-fijo .btn-primary');
+  if (title) title.textContent = 'Gasto fijo';
+  if (btn) btn.textContent = 'Guardar';
+}
 
 function renderFijos() {
   const area = document.getElementById('fijos-cards-area');
@@ -2328,7 +2369,7 @@ function renderFijos() {
     return `<div class="card saving-card">
       <div style="display:flex;justify-content:space-between;margin-bottom:12px">
         <div style="font-size:28px">${f.emoji || '📌'}</div>
-        <button class="btn btn-danger btn-sm btn-icon" onclick="deleteFijo(${i})">🗑</button>
+        <button class="btn btn-secondary btn-sm btn-icon" onclick="editFijo(${i})" title="Editar">✏️</button><button class="btn btn-danger btn-sm btn-icon" onclick="deleteFijo(${i})">🗑</button>
       </div>
       <div style="font-weight:600">${f.name}</div>
       ${f.traspaso ? '<div style="font-size:10px;color:var(--muted);margin-top:2px">🔄 Traspaso interno (no es un gasto real)</div>' : ''}
@@ -2386,7 +2427,13 @@ function addFijo() {
   const traspEl = document.getElementById('fijo-traspaso');
   const traspaso = traspEl ? traspEl.value === '1' : false;
   if (!name || isNaN(amount)) return;
-  fixedExpenses.push({ name, amount, day, freq, catId, emoji, traspaso });
+  const data = { name, amount, day, freq, catId, emoji, traspaso };
+  if (editingFijoIndex !== null && fixedExpenses[editingFijoIndex]) {
+    fixedExpenses[editingFijoIndex] = data;
+  } else {
+    fixedExpenses.push(data);
+  }
+  resetFijoModal();
   closeModal('modal-add-fijo');
   renderFijos();
 }
@@ -2722,6 +2769,36 @@ function initDefaultCuentas() {
   ];
 }
 
+let editingCuentaId = null;
+function resetCuentaModal() {
+  editingCuentaId = null;
+  document.getElementById('cuenta-name').value = '';
+  document.getElementById('cuenta-saldo').value = '';
+  document.getElementById('cuenta-tipo').value = 'corriente';
+  document.getElementById('cuenta-rent').value = 0;
+  document.getElementById('cuenta-emoji').value = '';
+  document.getElementById('cuenta-traspaso').value = '0';
+  const title = document.querySelector('#modal-add-cuenta .modal-title');
+  const btn = document.querySelector('#modal-add-cuenta .btn-primary');
+  if (title) title.textContent = 'Añadir cuenta o activo';
+  if (btn) btn.textContent = 'Añadir';
+}
+function editCuenta(id) {
+  const c = cuentas.find(x => x.id === id);
+  if (!c) return;
+  editingCuentaId = id;
+  document.getElementById('cuenta-name').value = c.name || '';
+  document.getElementById('cuenta-saldo').value = c.saldo || 0;
+  document.getElementById('cuenta-tipo').value = c.tipo || 'corriente';
+  document.getElementById('cuenta-rent').value = c.rent || 0;
+  document.getElementById('cuenta-emoji').value = c.emoji || '';
+  document.getElementById('cuenta-traspaso').value = c.traspaso ? '1' : '0';
+  const title = document.querySelector('#modal-add-cuenta .modal-title');
+  const btn = document.querySelector('#modal-add-cuenta .btn-primary');
+  if (title) title.textContent = 'Editar cuenta o activo';
+  if (btn) btn.textContent = 'Guardar cambios';
+  openModal('modal-add-cuenta');
+}
 function addCuenta() {
   const name = document.getElementById('cuenta-name').value.trim();
   const saldo = parseFloat(document.getElementById('cuenta-saldo').value) || 0;
@@ -2730,7 +2807,13 @@ function addCuenta() {
   const emoji = document.getElementById('cuenta-emoji').value.trim() || '💰';
   const traspaso = document.getElementById('cuenta-traspaso').value === '1';
   if (!name) return;
-  cuentas.push({ id: Date.now(), name, saldo, tipo, rent, emoji, traspaso });
+  if (editingCuentaId) {
+    const c = cuentas.find(x => x.id === editingCuentaId);
+    if (c) Object.assign(c, { name, saldo, tipo, rent, emoji, traspaso });
+  } else {
+    cuentas.push({ id: Date.now(), name, saldo, tipo, rent, emoji, traspaso });
+  }
+  resetCuentaModal();
   closeModal('modal-add-cuenta');
   renderPatrimonio();
 }
@@ -2738,13 +2821,6 @@ function addCuenta() {
 function deleteCuenta(id) {
   cuentas = cuentas.filter(c => c.id !== id);
   renderPatrimonio();
-}
-
-function updateSaldo(id) {
-  const c = cuentas.find(x => x.id === id);
-  if (!c) return;
-  const val = parseFloat(prompt(`Nuevo saldo para "${c.name}" (€):`, c.saldo));
-  if (!isNaN(val)) { c.saldo = val; renderPatrimonio(); }
 }
 
 function renderPatrimonio() {
@@ -2775,7 +2851,7 @@ function renderPatrimonio() {
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
         <div style="font-size:28px">${c.emoji}</div>
         <div style="display:flex;gap:6px">
-          <button class="btn btn-secondary btn-sm btn-icon" onclick="updateSaldo(${c.id})" title="Actualizar saldo">✏️</button>
+          <button class="btn btn-secondary btn-sm btn-icon" onclick="editCuenta(${c.id})" title="Editar cuenta">✏️</button>
           <button class="btn btn-danger btn-sm btn-icon" onclick="deleteCuenta(${c.id})">🗑</button>
         </div>
       </div>
@@ -2885,8 +2961,9 @@ function renderPatrimonio() {
 //  THEME TOGGLE
 // ═══════════════════════════════════════════════════════
 let isDark = true;
-function toggleTheme() {
-  isDark = !isDark;
+const THEME_PREF_KEY = 'paula_theme_pref';
+function applyTheme(theme, saveExplicit=false) {
+  isDark = theme === 'dark';
   document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
   const lbl = document.getElementById('theme-label');
   if (lbl) lbl.textContent = isDark ? '🌙 Modo oscuro' : '☀️ Modo claro';
@@ -2896,6 +2973,18 @@ function toggleTheme() {
   if (thumb) thumb.style.transform = isDark ? '' : 'translateX(16px)';
   const mobileBtn = document.getElementById('theme-btn-mobile');
   if (mobileBtn) mobileBtn.textContent = isDark ? '🌙' : '☀️';
+  if (saveExplicit) localStorage.setItem(THEME_PREF_KEY, isDark ? 'dark' : 'light');
+}
+function initTheme() {
+  const saved = localStorage.getItem(THEME_PREF_KEY);
+  const systemDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  applyTheme(saved || (systemDark ? 'dark' : 'light'), false);
+  if (!saved && window.matchMedia) {
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => applyTheme(e.matches ? 'dark' : 'light', false));
+  }
+}
+function toggleTheme() {
+  applyTheme(isDark ? 'light' : 'dark', true);
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -3242,7 +3331,7 @@ function renderRetos() {
             <div style="font-size:11px;color:var(--muted);margin-top:4px">${elapsed}/${r.dias} días ${done?'✅ Completado':''}</div>
           </div>
         </div>
-        <button class="btn btn-danger btn-sm btn-icon" onclick="retos.splice(${i},1);renderRetos()">🗑</button>
+        <button class="btn btn-danger btn-sm btn-icon" onclick="retos.splice(${i},1);renderRetos();saveAppState()">🗑</button>
       </div>`;
     }).join('');
   }
@@ -3987,6 +4076,146 @@ function copyProjectPrompt() {
   });
 }
 
+
+// ═══════════════════════════════════════════════════════════════════
+//  APP PERSISTENCE + DASHBOARD CUSTOMIZER
+// ═══════════════════════════════════════════════════════════════════
+
+const APP_STATE_KEY = 'paula_finance_app_state_v2';
+const DASH_PREF_KEY = 'paula_dashboard_period';
+const DASH_HIDDEN_KEY = 'paula_dashboard_hidden_fields';
+const DASH_FIELDS = [
+  { id:'gastos', label:'Gastos período' },
+  { id:'ingresos', label:'Ingresos período' },
+  { id:'balance', label:'Balance neto' },
+  { id:'daily', label:'Gasto diario medio' },
+  { id:'alerts', label:'Alertas' },
+  { id:'bar_chart', label:'Gráfico de gastos por mes' },
+  { id:'donut', label:'Distribución por categoría' },
+  { id:'recent', label:'Últimos movimientos' },
+];
+
+function serializeTxn(t) { return { ...t, date: t.date instanceof Date ? t.date.toISOString() : t.date }; }
+function reviveTxn(t) { return { ...t, date: new Date(t.date) }; }
+function saveAppState() {
+  try {
+    const state = {
+      transactions: transactions.map(serializeTxn),
+      categories,
+      fixedExpenses,
+      limits,
+      savingGoals,
+      cuentas,
+      retos: retos.map(r => ({ ...r, start: r.start instanceof Date ? r.start.toISOString() : r.start })),
+    };
+    localStorage.setItem(APP_STATE_KEY, JSON.stringify(state));
+  } catch(e) { console.warn('No se pudo guardar la sesión', e); }
+}
+function loadAppState() {
+  try {
+    const raw = localStorage.getItem(APP_STATE_KEY);
+    if (!raw) return false;
+    const state = JSON.parse(raw);
+    if (Array.isArray(state.transactions)) transactions = state.transactions.map(reviveTxn).sort((a,b)=>b.date-a.date);
+    if (Array.isArray(state.categories)) categories = state.categories;
+    if (Array.isArray(state.fixedExpenses)) fixedExpenses = state.fixedExpenses;
+    if (Array.isArray(state.limits)) limits = state.limits;
+    if (Array.isArray(state.savingGoals)) savingGoals = state.savingGoals;
+    if (Array.isArray(state.cuentas)) cuentas = state.cuentas;
+    if (Array.isArray(state.retos)) retos = state.retos.map(r => ({ ...r, start: new Date(r.start) }));
+    return true;
+  } catch(e) {
+    console.warn('No se pudo recuperar la sesión guardada', e);
+    return false;
+  }
+}
+function setupAutoSave() {
+  const names = ['saveEditTxn','deleteEditTxn','addManualTxn','confirmClaudeImport','addCategory','deleteCategory','addFijo','deleteFijo','addLimite','deleteLimite','addMeta','deleteMeta','addToMeta','addCuenta','deleteCuenta','addReto','setImpulsivo'];
+  names.forEach(name => {
+    const original = window[name];
+    if (typeof original !== 'function' || original._autosaveWrapped) return;
+    window[name] = function(...args) {
+      const result = original.apply(this, args);
+      saveAppState();
+      return result;
+    };
+    window[name]._autosaveWrapped = true;
+  });
+}
+function filterDashboardPeriod(allTxns, period) {
+  const now = new Date();
+  let from = null;
+  let label = 'Todo el período';
+  if (period === 'month_start') {
+    from = new Date(now.getFullYear(), now.getMonth(), 1);
+    label = 'Desde inicio de mes';
+  } else if (period === 'last_30') {
+    from = new Date(now); from.setDate(now.getDate() - 30);
+    label = 'Últimos 30 días';
+  } else if (period === 'last_90') {
+    from = new Date(now); from.setDate(now.getDate() - 90);
+    label = 'Últimos 90 días';
+  } else if (period === 'last_365') {
+    from = new Date(now); from.setDate(now.getDate() - 365);
+    label = 'Último año';
+  }
+  const txns = from ? allTxns.filter(t => t.date >= from && t.date <= now) : allTxns;
+  const start = from || (txns.length ? txns[txns.length-1].date : now);
+  const days = Math.max(1, Math.ceil((now - start) / 86400000) + 1);
+  return { txns, label, days };
+}
+function saveDashPrefs() {
+  const el = document.getElementById('dash-period');
+  if (el) localStorage.setItem(DASH_PREF_KEY, el.value);
+}
+function loadDashPrefs() {
+  const el = document.getElementById('dash-period');
+  const saved = localStorage.getItem(DASH_PREF_KEY);
+  if (el && saved && [...el.options].some(o => o.value === saved)) el.value = saved;
+}
+function getHiddenDashboardFields() {
+  try { return new Set(JSON.parse(localStorage.getItem(DASH_HIDDEN_KEY) || '[]')); }
+  catch(e) { return new Set(); }
+}
+function saveHiddenDashboardFields(hidden) {
+  localStorage.setItem(DASH_HIDDEN_KEY, JSON.stringify([...hidden]));
+}
+function applyDashboardVisibility() {
+  const hidden = getHiddenDashboardFields();
+  document.querySelectorAll('[data-dash-field]').forEach(el => {
+    el.style.display = hidden.has(el.dataset.dashField) ? 'none' : '';
+  });
+}
+function openDashboardCustomizer() {
+  renderDashboardCustomizerList();
+  openModal('modal-dashboard-customizer');
+}
+function renderDashboardCustomizerList() {
+  const hidden = getHiddenDashboardFields();
+  const list = document.getElementById('dashboard-customizer-list');
+  if (!list) return;
+  list.innerHTML = DASH_FIELDS.map(f => {
+    const checked = !hidden.has(f.id);
+    return `<label style="display:flex;align-items:center;gap:10px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px 14px;cursor:pointer;text-transform:none;letter-spacing:0;font-size:13px;color:var(--text);margin:0">
+      <input type="checkbox" ${checked?'checked':''} onchange="toggleDashboardField('${f.id}', this.checked)" style="width:auto">
+      <span style="flex:1">${f.label}</span>
+      <span style="color:var(--muted);font-size:12px">${checked?'visible':'oculto'}</span>
+    </label>`;
+  }).join('');
+}
+function toggleDashboardField(id, visible) {
+  const hidden = getHiddenDashboardFields();
+  if (visible) hidden.delete(id); else hidden.add(id);
+  saveHiddenDashboardFields(hidden);
+  renderDashboardCustomizerList();
+  applyDashboardVisibility();
+}
+function resetDashboardFields() {
+  localStorage.removeItem(DASH_HIDDEN_KEY);
+  renderDashboardCustomizerList();
+  applyDashboardVisibility();
+}
+
 // Rebuild project prompt when config fields change
 function refreshProjectPrompt() {
   const el = document.getElementById('gh-project-prompt');
@@ -3995,15 +4224,19 @@ function refreshProjectPrompt() {
 
 
 function init() {
+  initTheme();
   transactions = parseCSV();
   // Re-apply improved auto-categorization with expanded keyword list
   transactions.forEach(t => { t.category = autoCategory(t.name, t.amount); });
   initDefaultFijos();
   initDefaultLimites();
   initDefaultCuentas();
+  loadAppState();
+  setupAutoSave();
   buildNav();       // build dynamic sortable sidebar
   populateModalSelects();
   populateMonthFilter();
+  loadDashPrefs();
   renderDashboard();
   // Auto-sync from GitHub on startup
   setTimeout(autoSyncFromGitHub, 800);
