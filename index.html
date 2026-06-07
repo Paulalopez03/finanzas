@@ -2280,6 +2280,7 @@ function openModal(id) {
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 
 function populateModalSelects() {
+  ensureAhorroCategory();
   const selects = [
     'new-txn-cat','edit-txn-cat','fijo-cat','limite-cat','sim-cat',
     'txn-cat-filter','reto-cat'
@@ -4464,6 +4465,7 @@ async function pullStateFromGitHub(cfg) {
   const s = file.items;
   // Apply each state piece, keeping local data if GitHub has none
   if (Array.isArray(s.categories) && s.categories.length) categories = s.categories;
+  ensureAhorroCategory();
   if (Array.isArray(s.fixedExpenses)) fixedExpenses = s.fixedExpenses;
   if (Array.isArray(s.limits)) limits = s.limits;
   if (Array.isArray(s.savingGoals)) savingGoals = s.savingGoals;
@@ -4486,6 +4488,7 @@ async function pullStateFromGitHub(cfg) {
 
 // ── Push current state to state.json on GitHub ──
 async function pushStateToGitHub(cfg) {
+  ensureAhorroCategory();
   // Get current SHA of state.json first
   const existing = await readFileFromGitHub(cfg, 'state.json');
   const sha = existing ? existing.sha : null;
@@ -4685,7 +4688,8 @@ REGLAS DE CATEGORÍA (usa exactamente estos ids):
 - belleza → peluquería, estética, cosmética...
 - hogar → muebles, Ikea, decoración, Amazon...
 - ingreso → nómina, bizum recibido, transferencia recibida
-- traspaso → movimiento a cuenta de ahorro, Revolut
+- ahorro → dinero apartado a cuenta de ahorro, cuenta remunerada, Revolut ahorro, fondo de emergencia. Ej: "he pasado 200€ a ahorro"
+- traspaso → movimiento interno normal/puente a Revolut que NO sea ahorro
 - sin_cat → si no estás segura de la categoría
 - amount NEGATIVO = gasto, POSITIVO = ingreso
 - Si Paula no dice la fecha, usa la de hoy: ${today}
@@ -4756,7 +4760,7 @@ function loadAppState() {
     if (!raw) return false;
     const state = JSON.parse(raw);
     if (Array.isArray(state.transactions)) transactions = state.transactions.map(reviveTxn).sort((a,b)=>b.date-a.date);
-    if (Array.isArray(state.categories)) categories = state.categories;
+    if (Array.isArray(state.categories)) { categories = state.categories; ensureAhorroCategory(); }
     if (Array.isArray(state.fixedExpenses)) fixedExpenses = state.fixedExpenses;
     if (Array.isArray(state.limits)) limits = state.limits;
     if (Array.isArray(state.savingGoals)) savingGoals = state.savingGoals;
