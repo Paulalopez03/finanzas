@@ -5076,6 +5076,472 @@ function setupCrossDeviceSync() {
   window.addEventListener('focus', () => autoSyncFromGitHub());
 }
 
+
+// ═══════════════════════════════════════════════════════════════════
+//  PAULA FINANCE — REVISION FINAL / AUTOMATIZACIONES
+//  - Sincronizacion robusta entre dispositivos por state.json
+//  - pending.json acepta array directo o {items:[...]}
+//  - Ahorro mueve dinero de cuenta principal a cuenta ahorro
+//  - Ediciones/borrados revierten el efecto contable correctamente
+//  - Importes de ahorro se normalizan aunque se escriban positivos
+//  - Cambios visuales/estado se refrescan sin recargar
+// ═══════════════════════════════════════════════════════════════════
+
+const PAULA_META_KEY = 'paula_finance_meta_v1';
+const PAULA_CLIENT_KEY = 'paula_client_id_v1';
+let _paulaRemoteApplying = false;
+let _paulaSyncBound = false;
+
+function getPaulaClientId() {
+  let id = localStorage.getItem(PAULA_CLIENT_KEY);
+  if (!id) {
+    id = 'client_' + Math.random().toString(36).slice(2) + '_' + Date.now().toString(36);
+    localStorage.setItem(PAULA_CLIENT_KEY, id);
+  }
+  return id;
+}
+function readPaulaMeta() {
+  try { return JSON.parse(localStorage.getItem(PAULA_META_KEY) || '{}'); }
+  catch(e) { return {}; }
+}
+function writePaulaMeta(patch) {
+  try { localStorage.setItem(PAULA_META_KEY, JSON.stringify({ ...readPaulaMeta(), ...patch })); }
+  catch(e) { console.warn('No se pudo guardar meta local', e); }
+}
+function markPaulaDirty() {
+  if (_paulaRemoteApplying) return;
+  writePaulaMeta({ localDirtyAt: new Date().toISOString() });
+}
+function clearPaulaDirty(remoteUpdatedAt) {
+  writePaulaMeta({ localDirtyAt: null, lastRemoteUpdatedAt: remoteUpdatedAt || new Date().toISOString() });
+}
+function parseDateSafe(v) {
+  if (v instanceof Date) return v;
+  if (!v) return new Date();
+  const d = new Date(v);
+  return isNaN(d.getTime()) ? new Date() : d;
+}
+function normalizeTxn(raw, fallbackId) {
+  const amount = Number(raw.amount || 0);
+  const category = raw.category && categories.some(c => c.id === raw.category)
+    ? raw.category
+    : autoCategory(raw.name || 'Movimiento', amount);
+  const finalAmount = category === 'ahorro' ? -Math.abs(amount) : amount;
+  return {
+    id: raw.id || fallbackId || Date.now(),
+    name: (raw.name || 'Movimiento').trim(),
+    amount: finalAmount,
+    date: parseDateSafe(raw.date),
+    category,
+    note: raw.note || '',
+    impulsivo: !!raw.impulsivo,
+    manual: raw.manual !== false,
+    balanceApplied: raw.balanceApplied !== false
+  };
+}
+function sortTransactions() {
+  transactions.sort((a, b) => parseDateSafe(b.date) - parseDateSafe(a.date));
+}
+function refreshEverythingAfterDataChange(preferredPanel) {
+  updateCurrentBalanceDisplay();
+  if (typeof populateModalSelects === 'function') populateModalSelects();
+  if (typeof populateMonthFilter === 'function') populateMonthFilter();
+  const active = preferredPanel || document.querySelector('.panel.active')?.id?.replace('panel-', '');
+  if (active && typeof renderActivePanelAfterSync === 'function') renderActivePanelAfterSync();
+  else if (typeof renderDashboard === 'function') renderDashboard();
+}
+function applyTxnToAccounts(txn, direction) {
+  const dir = direction || 1;
+  const amount = Number(txn.amount || 0);
+  if (!amount) return;
+  if (txn.category === 'ahorro') {
+    const value = Math.abs(amount) * dir;
+    adjustMainCuentaBalance(-value);
+    adjustSavingsCuentaBalance(value);
+  } else {
+    adjustMainCuentaBalance(amount * dir);
+  }
+}
+function revertTxnFromAccounts(txn) {
+  applyTxnToAccounts(txn, -1);
+}
+function serializeTxnForState(t) {
+  return {
+    ...t,
+    date: t.date instanceof Date ? t.date.toISOString() : t.date,
+    manual: t.manual !== false,
+    balanceApplied: t.balanceApplied !== false
+  };
+}
+function reviveTxnForState(t) {
+  return normalizeTxn({ ...t, date: parseDateSafe(t.date) }, t.id);
+}
+function getManualTransactions() {
+  return transactions.filter(t => t.manual).map(serializeTxnForState);
+}
+function replaceManualTransactions(manualTxns) {
+  const base = transactions.filter(t => !t.manual);
+  const revived = (Array.isArray(manualTxns) ? manualTxns : []).map(reviveTxnForState);
+  const byId = new Map();
+  base.concat(revived).forEach(t => byId.set(String(t.id), t));
+  transactions = Array.from(byId.values());
+  sortTransactions();
+}
+function getPendingItemsFromFile(file) {
+  if (!file) return [];
+  if (Array.isArray(file.items)) return file.items;
+  if (file.items && Array.isArray(file.items.items)) return file.items.items;
+  try {
+    const parsed = JSON.parse(file.raw || '[]');
+    if (Array.isArray(parsed)) return parsed;
+    if (parsed && Array.isArray(parsed.items)) return parsed.items;
+  } catch(e) {}
+  return [];
+}
+function normalizePendingMovement(t, index) {
+  const rawDate = t.date || new Date().toISOString().slice(0, 10);
+  let date;
+  if (String(rawDate).includes('-')) {
+    const [y, m, d] = String(rawDate).split('-');
+    date = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
+  } else {
+    date = parseDateSafe(rawDate);
+  }
+  const rawAmount = Number(t.amount || 0);
+  const proposedCat = t.category && categories.some(c => c.id === t.category)
+    ? t.category
+    : autoCategory(t.name || '', rawAmount);
+  return normalizeTxn({
+    id: t.id || (Date.now() + index),
+    name: t.name || 'Claude',
+    amount: rawAmount,
+    date,
+    category: proposedCat,
+    note: t.note || '🤖 Añadido por Claude',
+    manual: true,
+    impulsivo: !!t.impulsivo,
+    balanceApplied: true
+  });
+}
+
+// Persistencia local mejorada: no marca cambios como "sucios" cuando solo se esta aplicando remoto.
+saveAppState = function() {
+  try {
+    ensureAhorroCategory();
+    const meta = readPaulaMeta();
+    const state = {
+      transactions: transactions.map(serializeTxnForState),
+      categories,
+      fixedExpenses,
+      limits,
+      savingGoals,
+      cuentas,
+      retos: retos.map(r => ({ ...r, start: r.start instanceof Date ? r.start.toISOString() : r.start })),
+      savedAt: new Date().toISOString(),
+      clientId: getPaulaClientId(),
+      localDirtyAt: meta.localDirtyAt || null
+    };
+    localStorage.setItem(APP_STATE_KEY, JSON.stringify(state));
+  } catch(e) { console.warn('No se pudo guardar la sesión', e); }
+};
+loadAppState = function() {
+  try {
+    const raw = localStorage.getItem(APP_STATE_KEY);
+    if (!raw) return false;
+    const state = JSON.parse(raw);
+    if (Array.isArray(state.transactions)) transactions = state.transactions.map(reviveTxnForState).sort((a,b)=>parseDateSafe(b.date)-parseDateSafe(a.date));
+    if (Array.isArray(state.categories)) { categories = state.categories; ensureAhorroCategory(); }
+    if (Array.isArray(state.fixedExpenses)) fixedExpenses = state.fixedExpenses;
+    if (Array.isArray(state.limits)) limits = state.limits;
+    if (Array.isArray(state.savingGoals)) savingGoals = state.savingGoals;
+    if (Array.isArray(state.cuentas)) cuentas = state.cuentas;
+    if (Array.isArray(state.retos)) retos = state.retos.map(r => ({ ...r, start: parseDateSafe(r.start) }));
+    return true;
+  } catch(e) {
+    console.warn('No se pudo recuperar la sesión guardada', e);
+    return false;
+  }
+};
+
+// Movimientos manuales con contabilidad correcta.
+addManualTxn = function() {
+  const name = document.getElementById('new-txn-name').value.trim();
+  const amountRaw = parseFloat(document.getElementById('new-txn-amount').value);
+  const dateVal = document.getElementById('new-txn-date').value;
+  const category = document.getElementById('new-txn-cat').value;
+  if (!name || isNaN(amountRaw) || !dateVal) return alert('Rellena todos los campos');
+  const txn = normalizeTxn({
+    id: Date.now(), name, amount: amountRaw, date: dateVal, category, note: '', manual: true, balanceApplied: true
+  });
+  transactions.unshift(txn);
+  sortTransactions();
+  applyTxnToAccounts(txn, 1);
+  markPaulaDirty();
+  saveAppState();
+  closeModal('modal-add-txn');
+  document.getElementById('new-txn-name').value = '';
+  document.getElementById('new-txn-amount').value = '';
+  refreshEverythingAfterDataChange('movimientos');
+  if (document.getElementById('panel-regla')?.classList.contains('active')) renderRegla();
+};
+confirmClaudeImport = function() {
+  if (!claudeImportBuffer.length) { previewClaudeImport(); return; }
+  let added = 0;
+  claudeImportBuffer.forEach((t, idx) => {
+    try {
+      const txn = normalizePendingMovement(t, idx);
+      transactions.unshift(txn);
+      applyTxnToAccounts(txn, 1);
+      added++;
+    } catch(e) { console.warn('Error importing', t, e); }
+  });
+  sortTransactions();
+  claudeImportBuffer = [];
+  document.getElementById('claude-import-json').value = '';
+  document.getElementById('claude-import-preview').innerHTML = '';
+  closeModal('modal-claude-import');
+  markPaulaDirty();
+  saveAppState();
+  refreshEverythingAfterDataChange('movimientos');
+  setTimeout(() => alert(`✅ ${added} movimiento${added>1?'s':''} añadidos correctamente.`), 80);
+};
+saveEditTxn = function() {
+  const t = transactions.find(x => x.id === editingIdx);
+  if (!t) return;
+  const oldSnapshot = { ...t };
+  const newCategory = document.getElementById('edit-txn-cat').value;
+  const newNote = document.getElementById('edit-txn-note').value;
+  const wasApplied = t.manual && t.balanceApplied !== false;
+  if (wasApplied && oldSnapshot.category !== newCategory) revertTxnFromAccounts(oldSnapshot);
+  t.category = newCategory;
+  if (t.category === 'ahorro') t.amount = -Math.abs(Number(t.amount || 0));
+  t.note = newNote;
+  t.balanceApplied = t.manual ? true : t.balanceApplied;
+  if (wasApplied && oldSnapshot.category !== newCategory) applyTxnToAccounts(t, 1);
+  markPaulaDirty();
+  saveAppState();
+  closeModal('modal-edit-txn');
+  refreshEverythingAfterDataChange('movimientos');
+};
+deleteEditTxn = function() {
+  if (!confirm('¿Eliminar este movimiento?')) return;
+  const deletedTxn = transactions.find(t => t.id === editingIdx);
+  transactions = transactions.filter(t => t.id !== editingIdx);
+  if (deletedTxn && deletedTxn.manual && deletedTxn.balanceApplied !== false) revertTxnFromAccounts(deletedTxn);
+  markPaulaDirty();
+  saveAppState();
+  closeModal('modal-edit-txn');
+  refreshEverythingAfterDataChange('movimientos');
+};
+
+// Patrimonio: editar una cuenta de ahorro mueve la diferencia desde/hacia la principal.
+addCuenta = function() {
+  const name = document.getElementById('cuenta-name').value.trim();
+  const saldo = parseFloat(document.getElementById('cuenta-saldo').value) || 0;
+  const tipo = document.getElementById('cuenta-tipo').value;
+  const rent = parseFloat(document.getElementById('cuenta-rent').value) || 0;
+  const emoji = document.getElementById('cuenta-emoji').value.trim() || '💰';
+  const traspaso = document.getElementById('cuenta-traspaso').value === '1';
+  if (!name) return;
+  if (editingCuentaId) {
+    const c = cuentas.find(x => x.id === editingCuentaId);
+    if (c) {
+      const oldSaldo = parseFloat(c.saldo) || 0;
+      const oldTipo = c.tipo;
+      const oldName = c.name || '';
+      const main = getMainCuenta();
+      const isSavingsLike = tipo === 'ahorro' || /ahorro|saving|remunerada/i.test(name || '');
+      const wasSavingsLike = oldTipo === 'ahorro' || /ahorro|saving|remunerada/i.test(oldName);
+      const shouldMoveFromMain = main && c.id !== main.id && !traspaso && (isSavingsLike || wasSavingsLike);
+      const delta = Math.round((saldo - oldSaldo) * 100) / 100;
+      Object.assign(c, { name, saldo, tipo, rent, emoji, traspaso });
+      if (shouldMoveFromMain && delta !== 0) adjustMainCuentaBalance(-delta);
+    }
+  } else {
+    cuentas.push({ id: Date.now(), name, saldo, tipo, rent, emoji, traspaso });
+  }
+  resetCuentaModal();
+  closeModal('modal-add-cuenta');
+  markPaulaDirty();
+  saveAppState();
+  refreshEverythingAfterDataChange('patrimonio');
+};
+deleteCuenta = function(id) {
+  cuentas = cuentas.filter(c => c.id !== id);
+  markPaulaDirty();
+  saveAppState();
+  refreshEverythingAfterDataChange('patrimonio');
+};
+
+// Estado remoto: reemplaza manuales para que borrar en movil tambien desaparezca en ordenador.
+function applyRemoteState(s) {
+  if (!s || typeof s !== 'object') return;
+  _paulaRemoteApplying = true;
+  try {
+    if (Array.isArray(s.categories) && s.categories.length) categories = s.categories;
+    ensureAhorroCategory();
+    if (Array.isArray(s.fixedExpenses)) fixedExpenses = s.fixedExpenses;
+    if (Array.isArray(s.limits)) limits = s.limits;
+    if (Array.isArray(s.savingGoals)) savingGoals = s.savingGoals;
+    if (Array.isArray(s.cuentas) && s.cuentas.length) cuentas = s.cuentas;
+    if (Array.isArray(s.retos)) retos = s.retos.map(r => ({ ...r, start: parseDateSafe(r.start) }));
+    if (Array.isArray(s.manualTxns)) replaceManualTransactions(s.manualTxns);
+    const remoteUpdated = s.lastUpdated || new Date().toISOString();
+    clearPaulaDirty(remoteUpdated);
+    saveAppState();
+  } finally {
+    _paulaRemoteApplying = false;
+  }
+}
+pullStateFromGitHub = async function(cfg) {
+  const file = await readFileFromGitHub(cfg, 'state.json');
+  if (!file || !file.items || typeof file.items !== 'object') return;
+  const s = file.items;
+  const meta = readPaulaMeta();
+  const remoteUpdated = s.lastUpdated ? new Date(s.lastUpdated).getTime() : 0;
+  const localDirty = meta.localDirtyAt ? new Date(meta.localDirtyAt).getTime() : 0;
+  if (localDirty && remoteUpdated && localDirty > remoteUpdated && s.clientId !== getPaulaClientId()) {
+    console.log('Hay cambios locales mas recientes; no se pisa con estado remoto antiguo.');
+    return;
+  }
+  applyRemoteState(s);
+  console.log('✅ State pulled from GitHub');
+};
+pushStateToGitHub = async function(cfg) {
+  ensureAhorroCategory();
+  const existing = await readFileFromGitHub(cfg, 'state.json');
+  const sha = existing ? existing.sha : null;
+  const lastUpdated = new Date().toISOString();
+  const state = {
+    schemaVersion: 3,
+    clientId: getPaulaClientId(),
+    categories,
+    fixedExpenses,
+    limits,
+    savingGoals,
+    cuentas,
+    retos: retos.map(r => ({ ...r, start: r.start instanceof Date ? r.start.toISOString() : r.start })),
+    manualTxns: getManualTransactions(),
+    uiPrefs: typeof readUIPrefs === 'function' ? readUIPrefs() : {},
+    lastUpdated
+  };
+  try {
+    await writeFileToGitHub(cfg, 'state.json', JSON.stringify(state, null, 2), sha, '💾 Sync state from Paula app');
+  } catch(e) {
+    if (String(e.message || '').includes('409')) {
+      const latest = await readFileFromGitHub(cfg, 'state.json');
+      await writeFileToGitHub(cfg, 'state.json', JSON.stringify(state, null, 2), latest ? latest.sha : null, '💾 Sync state from Paula app');
+    } else {
+      throw e;
+    }
+  }
+  clearPaulaDirty(lastUpdated);
+  console.log('✅ State pushed to GitHub');
+};
+autoSyncFromGitHub = async function() {
+  const cfg = loadGHConfig();
+  if (!cfg || !cfg.owner || !cfg.repo || !cfg.token) {
+    updateSyncBadge('none');
+    return;
+  }
+  if (_isSyncingNow) return;
+  _isSyncingNow = true;
+  updateSyncBadge('syncing');
+  try {
+    await pullStateFromGitHub(cfg);
+    const pending = await readFileFromGitHub(cfg, 'pending.json');
+    const pendingItems = getPendingItemsFromFile(pending);
+    if (!pendingItems.length) {
+      renderActivePanelAfterSync();
+      updateSyncBadge('empty');
+      return;
+    }
+    let added = 0;
+    pendingItems.forEach((t, idx) => {
+      try {
+        const txn = normalizePendingMovement(t, idx);
+        if (!transactions.some(existing => String(existing.id) === String(txn.id))) {
+          transactions.unshift(txn);
+          applyTxnToAccounts(txn, 1);
+          added++;
+        }
+      } catch(e) { console.warn('Import error:', t, e); }
+    });
+    sortTransactions();
+    markPaulaDirty();
+    await pushStateToGitHub(cfg);
+    if (pending) await writeFileToGitHub(cfg, 'pending.json', '[]', pending.sha, '🧹 Clear pending after import');
+    saveAppState();
+    refreshEverythingAfterDataChange();
+    updateSyncBadge('ok', added);
+    if (added) showToast(`✅ ${added} movimiento${added > 1 ? 's' : ''} nuevos desde Claude`);
+  } catch(e) {
+    console.warn('GitHub sync failed:', e);
+    updateSyncBadge('error', 0, e.message);
+  } finally {
+    _isSyncingNow = false;
+  }
+};
+setupCrossDeviceSync = function() {
+  const cfg = loadGHConfig();
+  if (!cfg || !cfg.owner || !cfg.repo || !cfg.token) {
+    updateSyncBadge('none');
+    return;
+  }
+  clearInterval(_syncPullTimer);
+  _syncPullTimer = setInterval(() => {
+    if (document.visibilityState === 'visible') autoSyncFromGitHub();
+  }, 30000);
+  if (!_paulaSyncBound) {
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') autoSyncFromGitHub();
+    });
+    window.addEventListener('focus', () => autoSyncFromGitHub());
+    window.addEventListener('online', () => autoSyncFromGitHub());
+    _paulaSyncBound = true;
+  }
+};
+saveToGitHub = async function() {
+  const cfg = loadGHConfig();
+  if (!cfg || !cfg.owner || !cfg.repo || !cfg.token) {
+    updateSyncBadge('none');
+    return;
+  }
+  if (_isSyncingNow) { scheduleGitHubPush(1800); return; }
+  try {
+    updateSyncBadge('syncing');
+    await pushStateToGitHub(cfg);
+    updateSyncBadge('empty');
+  } catch(e) {
+    console.warn('saveToGitHub failed:', e);
+    updateSyncBadge('error', 0, 'No se pudo subir a GitHub');
+  }
+};
+manualSync = function() {
+  const cfg = loadGHConfig();
+  if (!cfg || !cfg.owner || !cfg.repo || !cfg.token) { openGHConfig(); return; }
+  showToast('🔄 Sincronizando con GitHub…');
+  autoSyncFromGitHub();
+};
+
+// Pequeñas automatizaciones de guardado visual.
+const _oldWriteUIPrefs = typeof writeUIPrefs === 'function' ? writeUIPrefs : null;
+if (_oldWriteUIPrefs) {
+  writeUIPrefs = function(patch) {
+    _oldWriteUIPrefs(patch);
+    markPaulaDirty();
+  };
+}
+const _oldToggleDashboardField = typeof toggleDashboardField === 'function' ? toggleDashboardField : null;
+if (_oldToggleDashboardField) {
+  toggleDashboardField = function(id, visible) {
+    const result = _oldToggleDashboardField(id, visible);
+    markPaulaDirty(); saveAppState(); scheduleGitHubPush(1200);
+    return result;
+  };
+}
+
+
 function init() {
   initTheme();
   transactions = parseCSV();
@@ -5217,6 +5683,420 @@ if (document.readyState === 'loading') {
     </button>
   </div>
 </div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════
+     MEJORAS AVANZADAS: ahorro rápido, backups, cierre mensual,
+     alertas inteligentes, clasificación rápida y sync visible.
+     Añadido sobre index_16_revision_automatizada_ok.html
+═══════════════════════════════════════════════════════════════════ -->
+<style id="paula-advanced-style">
+  .paula-money-strip{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:20px}
+  .paula-mini-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px;min-width:0}
+  .paula-mini-card strong{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:7px}
+  .paula-mini-card .value{font-family:var(--font-mono);font-size:24px;font-weight:600;line-height:1;color:var(--text)}
+  .paula-mini-card .hint{font-size:12px;color:var(--muted);margin-top:7px;line-height:1.45}
+  .paula-action-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .paula-action-row .btn{white-space:nowrap}
+  .paula-smart-list{display:grid;gap:8px}
+  .paula-smart-item{display:flex;gap:10px;align-items:flex-start;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:10px 12px;font-size:13px;line-height:1.45}
+  .paula-smart-item .emoji{font-size:18px;line-height:1.1;flex-shrink:0}
+  .paula-sync-card{font-size:12px;color:var(--muted);line-height:1.5;display:grid;gap:6px}
+  .paula-bizum-grid{display:grid;gap:10px}
+  .paula-bizum-row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:10px 12px}
+  .paula-bizum-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+  .paula-bizum-actions button{padding:6px 9px;border-radius:9px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:11px;cursor:pointer}
+  .paula-bizum-actions button:hover{border-color:var(--accent2)}
+  .paula-checklist{display:grid;gap:8px;margin-top:10px}
+  .paula-check{display:flex;gap:8px;align-items:flex-start;font-size:13px;color:var(--text);line-height:1.45}
+  .paula-check span:first-child{width:20px;text-align:center;flex-shrink:0}
+  .paula-toast-advanced{position:fixed;left:50%;bottom:calc(86px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:3000;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.35);font-size:13px;max-width:92vw;text-align:center}
+  @media(max-width:768px){
+    .paula-money-strip{grid-template-columns:1fr!important}
+    .paula-bizum-row{grid-template-columns:1fr!important}
+    .paula-bizum-actions{justify-content:flex-start}
+    .paula-action-row .btn{width:100%;justify-content:center}
+  }
+</style>
+<script id="paula-advanced-script">
+(function(){
+  const ADV_KEY = 'paula_advanced_meta_v1';
+  const MONTHLY_KEY = 'paula_monthly_closings_v1';
+
+  function safeJSON(raw, fallback){ try { return JSON.parse(raw || ''); } catch(e){ return fallback; } }
+  function advRead(){ return safeJSON(localStorage.getItem(ADV_KEY), {}) || {}; }
+  function advWrite(patch){ localStorage.setItem(ADV_KEY, JSON.stringify({ ...advRead(), ...patch })); }
+  function money(n){ return typeof fmt === 'function' ? fmt(Number(n)||0) : ((Number(n)||0).toFixed(2)+'€'); }
+  function moneyShort(n){ return typeof fmtShort === 'function' ? fmtShort(Number(n)||0) : money(n); }
+  function todayISO(){ return new Date().toISOString().slice(0,10); }
+  function makeId(prefix){ return prefix + '_' + Date.now() + '_' + Math.floor(Math.random()*100000); }
+  function mainAccount(){ return typeof getMainCuenta === 'function' ? getMainCuenta() : (Array.isArray(cuentas) ? cuentas[0] : null); }
+  function savingsAccount(){ return typeof getSavingsCuenta === 'function' ? getSavingsCuenta() : (Array.isArray(cuentas) ? cuentas.find(c => c.tipo === 'ahorro') : null); }
+  function patrimonioTotal(){ return Array.isArray(cuentas) ? cuentas.filter(c => !c.traspaso).reduce((s,c)=>s+(Number(c.saldo)||0),0) : 0; }
+  function ahorroApartado(){ const c = savingsAccount(); return c ? Number(c.saldo)||0 : 0; }
+  function disponibleActual(){ const c = mainAccount(); return c ? Number(c.saldo)||0 : 0; }
+  function activePanel(){ const p = document.querySelector('.panel.active'); return p ? p.id.replace('panel-','') : 'dashboard'; }
+  function refreshAll(){
+    try { if (typeof updateCurrentBalanceDisplay === 'function') updateCurrentBalanceDisplay(); } catch(e){}
+    try { if (typeof renderDashboard === 'function' && activePanel()==='dashboard') renderDashboard(); } catch(e){}
+    try { if (typeof renderMovimientos === 'function' && activePanel()==='movimientos') renderMovimientos(); } catch(e){}
+    try { if (typeof renderPatrimonio === 'function' && activePanel()==='patrimonio') renderPatrimonio(); } catch(e){}
+    try { if (typeof renderRegla === 'function' && activePanel()==='regla') renderRegla(); } catch(e){}
+    try { if (typeof renderAhorro === 'function' && activePanel()==='ahorro') renderAhorro(); } catch(e){}
+    injectAdvancedUI();
+  }
+  function persistNow(){
+    try { if (typeof ensureAhorroCategory === 'function') ensureAhorroCategory(); } catch(e){}
+    try { if (typeof saveAppState === 'function') saveAppState(); } catch(e){}
+    try { if (typeof markPaulaDirty === 'function') markPaulaDirty(); } catch(e){}
+    try { if (typeof scheduleGitHubPush === 'function') scheduleGitHubPush(1000); } catch(e){}
+    advWrite({ lastLocalSave: new Date().toISOString(), lastDevice: getDeviceLabel() });
+  }
+  function toast(msg){
+    if (typeof showToast === 'function') { showToast(msg); return; }
+    const old = document.querySelector('.paula-toast-advanced'); if (old) old.remove();
+    const div = document.createElement('div'); div.className='paula-toast-advanced'; div.textContent=msg;
+    document.body.appendChild(div); setTimeout(()=>div.remove(), 3200);
+  }
+  function getDeviceLabel(){
+    const ua = navigator.userAgent || '';
+    if (/Mobi|Android|iPhone|iPad/i.test(ua)) return 'móvil';
+    return 'ordenador';
+  }
+
+  function addQuickSavings(amount, label){
+    const value = Math.abs(Number(String(amount).replace(',','.')) || 0);
+    if (!value) return;
+    const txn = {
+      id: makeId('ahorro'),
+      name: label || 'Traspaso a ahorro',
+      date: new Date(),
+      amount: -value,
+      category: 'ahorro',
+      note: 'Movimiento creado desde botón rápido',
+      manual: true
+    };
+    transactions.unshift(txn);
+    if (typeof applyTxnToAccounts === 'function') applyTxnToAccounts(txn, 1);
+    else if (typeof moveMoneyToSavings === 'function') moveMoneyToSavings(value);
+    else {
+      const main = mainAccount(); const sav = savingsAccount();
+      if (main) main.saldo = Math.round(((Number(main.saldo)||0)-value)*100)/100;
+      if (sav) sav.saldo = Math.round(((Number(sav.saldo)||0)+value)*100)/100;
+    }
+    try { if (typeof sortTransactions === 'function') sortTransactions(); else transactions.sort((a,b)=>new Date(b.date)-new Date(a.date)); } catch(e){}
+    persistNow();
+    refreshAll();
+    toast('🏦 Ahorro movido: ' + money(value));
+  }
+
+  window.paulaQuickSavings = function(){
+    const target = (typeof document !== 'undefined' && document.getElementById('regla-nomina-input')) ? (Number(document.getElementById('regla-nomina-input').value)||1452.66)*0.2 : 0;
+    const raw = prompt('¿Cuánto quieres mover a ahorro?', target ? Math.round(target).toString() : '200');
+    if (raw === null) return;
+    addQuickSavings(raw, 'Traspaso a ahorro');
+  };
+
+  function getMonthTxns(date = new Date()){
+    return transactions.filter(t => {
+      const d = new Date(t.date);
+      return d.getMonth() === date.getMonth() && d.getFullYear() === date.getFullYear();
+    });
+  }
+  function getMonthStats(date = new Date()){
+    const tx = getMonthTxns(date);
+    const gastos = tx.filter(t => Number(t.amount)<0 && !['traspaso','ahorro','ingreso'].includes(t.category));
+    const ingresos = tx.filter(t => Number(t.amount)>0 && t.category !== 'traspaso');
+    const ahorro = tx.filter(t => t.category === 'ahorro').reduce((s,t)=>s+Math.abs(Number(t.amount)||0),0);
+    const gastoTotal = gastos.reduce((s,t)=>s+Math.abs(Number(t.amount)||0),0);
+    const ingresoTotal = ingresos.reduce((s,t)=>s+(Number(t.amount)||0),0);
+    const sinCat = tx.filter(t => t.category === 'sin_cat' && Number(t.amount)<0);
+    const byCat = {};
+    gastos.forEach(t => byCat[t.category] = (byCat[t.category]||0) + Math.abs(Number(t.amount)||0));
+    const top = Object.entries(byCat).sort((a,b)=>b[1]-a[1])[0];
+    return { tx, gastos, ingresos, ahorro, gastoTotal, ingresoTotal, sinCat, top };
+  }
+
+  function buildMoneyStrip(){
+    return `<div id="paula-money-strip" class="paula-money-strip">
+      <div class="paula-mini-card"><strong>Disponible para gastar</strong><div class="value" style="color:var(--accent)">${money(disponibleActual())}</div><div class="hint">Cuenta principal. Baja cuando mueves dinero a ahorro.</div></div>
+      <div class="paula-mini-card"><strong>Ahorro apartado</strong><div class="value" style="color:var(--green)">${money(ahorroApartado())}</div><div class="hint">Cuenta de ahorro/remunerada.</div></div>
+      <div class="paula-mini-card"><strong>Patrimonio total</strong><div class="value">${money(patrimonioTotal())}</div><div class="hint">Disponible + ahorro + otras cuentas reales.</div></div>
+    </div>`;
+  }
+
+  function smartAlertsHTML(){
+    const st = getMonthStats();
+    const nomina = Number(document.getElementById('regla-nomina-input')?.value) || 1452.66;
+    const day = new Date().getDate();
+    const daysInMonth = new Date(new Date().getFullYear(), new Date().getMonth()+1, 0).getDate();
+    const expectedSpend = (nomina * 0.8) * (day / daysInMonth);
+    const alerts = [];
+    if (st.sinCat.length) alerts.push(['❓', `${st.sinCat.length} movimientos sin clasificar están ensuciando el análisis.`, 'Ve a Movimientos y usa la clasificación rápida.']);
+    if (st.ahorro >= nomina*0.2) alerts.push(['✅', `Ahorro mensual cumplido: ${money(st.ahorro)} apartados.`, 'La regla 50/30/20 ya marca el bloque de ahorro como cubierto.']);
+    else alerts.push(['🏦', `Faltan ${money(Math.max(0, nomina*0.2 - st.ahorro))} para cumplir el 20% de ahorro.`, 'Puedes usar el botón “Mover a ahorro”.']);
+    if (st.gastoTotal > expectedSpend*1.15) alerts.push(['⚠️', `Ritmo de gasto alto: ${money(st.gastoTotal)} este mes.`, `A estas alturas irías cómoda cerca de ${money(expectedSpend)}.`]);
+    if (st.top) { const cat = typeof getCat === 'function' ? getCat(st.top[0]) : {emoji:'', name:st.top[0]}; alerts.push([cat.emoji || '📌', `Mayor foco del mes: ${cat.name} (${money(st.top[1])}).`, 'Buen sitio para poner límite si quieres controlar el mes.']); }
+    return `<div id="paula-smart-alerts" class="card" style="margin-bottom:20px"><div class="card-title">✨ Alertas inteligentes</div><div class="paula-smart-list">${alerts.slice(0,5).map(a=>`<div class="paula-smart-item"><div class="emoji">${a[0]}</div><div><b>${a[1]}</b><div style="color:var(--muted);font-size:12px;margin-top:2px">${a[2]}</div></div></div>`).join('')}</div></div>`;
+  }
+
+  function monthlySummaryHTML(){
+    const st = getMonthStats();
+    const monthName = new Date().toLocaleDateString('es-ES',{month:'long', year:'numeric'});
+    const top = st.top ? (typeof getCat === 'function' ? getCat(st.top[0]).name : st.top[0]) + ' · ' + money(st.top[1]) : 'Sin gastos todavía';
+    return `<div id="paula-monthly-summary" class="card" style="margin-bottom:20px">
+      <div class="card-title">📅 Resumen automático de ${monthName}</div>
+      <div class="grid grid-4" style="margin-bottom:14px">
+        <div><div class="stat-label">Gastado</div><div class="stat-value" style="color:var(--red)">${money(st.gastoTotal)}</div></div>
+        <div><div class="stat-label">Ingresado</div><div class="stat-value" style="color:var(--green)">${money(st.ingresoTotal)}</div></div>
+        <div><div class="stat-label">Ahorrado</div><div class="stat-value" style="color:var(--green)">${money(st.ahorro)}</div></div>
+        <div><div class="stat-label">Top categoría</div><div style="font-size:13px;margin-top:6px">${top}</div></div>
+      </div>
+      <div class="paula-action-row"><button class="btn btn-primary btn-sm" onclick="paulaRunMonthClose()">✅ Hacer cierre de mes</button><button class="btn btn-secondary btn-sm" onclick="showPanel('movimientos')">Clasificar pendientes</button></div>
+    </div>`;
+  }
+
+  function syncHistoryHTML(){
+    const a = advRead();
+    const last = a.lastSyncAt ? new Date(a.lastSyncAt).toLocaleString('es-ES') : 'Todavía sin sincronización registrada';
+    const local = a.lastLocalSave ? new Date(a.lastLocalSave).toLocaleString('es-ES') : 'Sin cambios locales recientes';
+    const status = a.lastSyncStatus || '—';
+    const device = a.lastDevice || getDeviceLabel();
+    return `<div id="paula-sync-history" class="card" style="margin-bottom:20px"><div class="card-title">🔄 Historial de sincronización</div><div class="paula-sync-card"><div><b>Última sync:</b> ${last}</div><div><b>Último cambio local:</b> ${local}</div><div><b>Estado:</b> ${status}</div><div><b>Este dispositivo:</b> ${device}</div></div></div>`;
+  }
+
+  function backupButtonsHTML(){
+    return `<div id="paula-backup-tools" class="card" style="margin-bottom:20px"><div class="card-title">🧳 Copia de seguridad</div><div class="paula-action-row"><button class="btn btn-secondary btn-sm" onclick="paulaExportBackup()">⬇ Exportar JSON completo</button><button class="btn btn-secondary btn-sm" onclick="paulaImportBackup()">⬆ Importar JSON</button></div><div style="font-size:12px;color:var(--muted);margin-top:10px;line-height:1.5">Guarda movimientos, categorías, cuentas, metas, límites, retos y preferencias. Útil si cambias de repo o quieres una copia fuera de GitHub.</div></div>`;
+  }
+
+  window.paulaExportBackup = function(){
+    const state = {
+      exportedAt: new Date().toISOString(),
+      source: 'Paula Finanzas',
+      schemaVersion: 4,
+      transactions: transactions.map(t => ({...t, date: new Date(t.date).toISOString()})),
+      categories, fixedExpenses, limits, savingGoals, cuentas,
+      retos: (Array.isArray(retos)?retos:[]).map(r => ({...r, start: r.start instanceof Date ? r.start.toISOString() : r.start})),
+      uiPrefs: typeof readUIPrefs === 'function' ? readUIPrefs() : {},
+      advancedMeta: advRead()
+    };
+    const blob = new Blob([JSON.stringify(state,null,2)], {type:'application/json'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'paula_finanzas_backup_' + todayISO() + '.json';
+    a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+  };
+  window.paulaImportBackup = function(){
+    const input = document.createElement('input'); input.type='file'; input.accept='application/json';
+    input.onchange = () => {
+      const file = input.files && input.files[0]; if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const s = JSON.parse(reader.result);
+          if (!confirm('Esto sustituirá los datos actuales por la copia importada. ¿Continuar?')) return;
+          if (Array.isArray(s.transactions)) transactions = s.transactions.map(t => ({...t, date:new Date(t.date)})).sort((a,b)=>new Date(b.date)-new Date(a.date));
+          if (Array.isArray(s.categories)) categories = s.categories;
+          if (Array.isArray(s.fixedExpenses)) fixedExpenses = s.fixedExpenses;
+          if (Array.isArray(s.limits)) limits = s.limits;
+          if (Array.isArray(s.savingGoals)) savingGoals = s.savingGoals;
+          if (Array.isArray(s.cuentas)) cuentas = s.cuentas;
+          if (Array.isArray(s.retos)) retos = s.retos.map(r => ({...r, start:new Date(r.start)}));
+          if (s.uiPrefs && typeof writeUIPrefs === 'function') writeUIPrefs(s.uiPrefs);
+          persistNow();
+          if (typeof populateModalSelects === 'function') populateModalSelects();
+          if (typeof populateMonthFilter === 'function') populateMonthFilter();
+          refreshAll();
+          toast('✅ Copia importada');
+        } catch(e) { alert('No se pudo importar el JSON.'); console.warn(e); }
+      };
+      reader.readAsText(file);
+    };
+    input.click();
+  };
+
+  function bizumClassifierHTML(){
+    const list = transactions.filter(t => Number(t.amount)<0 && t.category === 'sin_cat' && /bizum enviado/i.test(t.name || '')).slice(0,8);
+    if (!list.length) return '';
+    const cats = ['restaurantes','ocio','ropa','supermercado','transporte','belleza','hogar','otros'];
+    return `<div id="paula-bizum-classifier" class="card" style="margin-bottom:16px"><div class="card-title">⚡ Clasificar Bizums rápido</div><div class="paula-bizum-grid">${list.map(t => `<div class="paula-bizum-row"><div><b>${t.name}</b><div style="font-size:12px;color:var(--muted);margin-top:2px">${new Date(t.date).toLocaleDateString('es-ES')} · ${money(Math.abs(Number(t.amount)||0))}</div></div><div class="paula-bizum-actions">${cats.map(c=>{ const cat = typeof getCat==='function'?getCat(c):{emoji:'',name:c}; return `<button onclick="paulaClassifyTxn('${String(t.id).replace(/'/g,'\\\'')}','${c}')">${cat.emoji} ${cat.name.split(' ')[0]}</button>`; }).join('')}</div></div>`).join('')}</div></div>`;
+  }
+  window.paulaClassifyTxn = function(id, cat){
+    const t = transactions.find(x => String(x.id) === String(id)); if (!t) return;
+    t.category = cat;
+    t.note = (t.note || '').trim();
+    persistNow();
+    refreshAll();
+    toast('✅ Bizum clasificado como ' + (typeof getCat === 'function' ? getCat(cat).name : cat));
+  };
+
+  window.paulaRunMonthClose = function(){
+    const st = getMonthStats();
+    const monthKeyVal = new Date().toISOString().slice(0,7);
+    const closing = {
+      id: makeId('close'), month: monthKeyVal, createdAt: new Date().toISOString(),
+      gastoTotal: st.gastoTotal, ingresoTotal: st.ingresoTotal, ahorro: st.ahorro,
+      pendientes: st.sinCat.length,
+      topCategory: st.top ? st.top[0] : null,
+      topAmount: st.top ? st.top[1] : 0,
+      patrimonioTotal: patrimonioTotal(), disponible: disponibleActual(), ahorroApartado: ahorroApartado()
+    };
+    const all = safeJSON(localStorage.getItem(MONTHLY_KEY), []);
+    const filtered = Array.isArray(all) ? all.filter(x => x.month !== monthKeyVal) : [];
+    filtered.push(closing);
+    localStorage.setItem(MONTHLY_KEY, JSON.stringify(filtered));
+    persistNow();
+    alert(`Cierre guardado.\n\nGastado: ${money(st.gastoTotal)}\nAhorrado: ${money(st.ahorro)}\nPendientes sin clasificar: ${st.sinCat.length}`);
+  };
+
+  function monthCloseHTML(){
+    const st = getMonthStats();
+    const nomina = Number(document.getElementById('regla-nomina-input')?.value) || 1452.66;
+    const okClass = st.sinCat.length === 0;
+    const okAhorro = st.ahorro >= nomina*0.2;
+    return `<div id="paula-month-close-card" class="card" style="margin-bottom:20px"><div class="card-title">✅ Modo cierre de mes</div><div style="font-size:13px;color:var(--muted);line-height:1.55">Antes de dar el mes por cerrado, revisa estos puntos:</div><div class="paula-checklist"><div class="paula-check"><span>${okClass?'✅':'⚠️'}</span><div>Movimientos sin clasificar: <b>${st.sinCat.length}</b></div></div><div class="paula-check"><span>${okAhorro?'✅':'🏦'}</span><div>Ahorro del 20%: <b>${money(st.ahorro)}</b> de ${money(nomina*0.2)}</div></div><div class="paula-check"><span>💜</span><div>Disponible actual: <b>${money(disponibleActual())}</b></div></div></div><div class="paula-action-row" style="margin-top:14px"><button class="btn btn-primary btn-sm" onclick="paulaRunMonthClose()">Guardar cierre</button><button class="btn btn-secondary btn-sm" onclick="showPanel('movimientos')">Revisar movimientos</button></div></div>`;
+  }
+
+  function insertAfter(target, html, id){
+    if (!target || document.getElementById(id)) return;
+    target.insertAdjacentHTML('afterend', html);
+  }
+  function insertBefore(target, html, id){
+    if (!target || document.getElementById(id)) return;
+    target.insertAdjacentHTML('beforebegin', html);
+  }
+  function removeAdvanced(){
+    ['paula-money-strip','paula-smart-alerts','paula-monthly-summary','paula-sync-history','paula-backup-tools','paula-bizum-classifier','paula-month-close-card','paula-regla-quick-save','paula-pat-quick-actions'].forEach(id => { const el = document.getElementById(id); if (el) el.remove(); });
+  }
+
+  function injectAdvancedUI(){
+    // Limpiar piezas dinámicas para recalcular importes.
+    removeAdvanced();
+    const dash = document.getElementById('panel-dashboard');
+    if (dash) {
+      const stats = dash.querySelector('.grid.grid-4');
+      insertAfter(stats, buildMoneyStrip(), 'paula-money-strip');
+      const alerts = document.getElementById('dash-alerts');
+      insertAfter(alerts, smartAlertsHTML(), 'paula-smart-alerts');
+      const smart = document.getElementById('paula-smart-alerts');
+      insertAfter(smart, monthlySummaryHTML(), 'paula-monthly-summary');
+      const summary = document.getElementById('paula-monthly-summary');
+      insertAfter(summary, monthCloseHTML(), 'paula-month-close-card');
+    }
+    const regla = document.getElementById('panel-regla');
+    if (regla) {
+      const intro = document.getElementById('regla-intro-box');
+      insertAfter(intro, `<div id="paula-regla-quick-save" class="card" style="margin-bottom:20px;background:rgba(52,211,153,.08);border-color:rgba(52,211,153,.25)"><div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap"><div><div class="card-title" style="margin-bottom:6px">🏦 Ahorro rápido</div><div style="font-size:13px;color:var(--muted)">Mueve dinero de la cuenta principal a la cuenta de ahorro y rellena la regla.</div></div><button class="btn btn-primary" onclick="paulaQuickSavings()">Mover a ahorro</button></div></div>`, 'paula-regla-quick-save');
+    }
+    const pat = document.getElementById('panel-patrimonio');
+    if (pat) {
+      const first = pat.querySelector('.page-header');
+      insertAfter(first, `<div id="paula-pat-quick-actions" class="card" style="margin-bottom:20px"><div class="card-title">Acciones rápidas</div><div class="paula-action-row"><button class="btn btn-primary btn-sm" onclick="paulaQuickSavings()">🏦 Mover a ahorro</button><button class="btn btn-secondary btn-sm" onclick="paulaExportBackup()">⬇ Backup</button><button class="btn btn-secondary btn-sm" onclick="paulaImportBackup()">⬆ Restaurar</button></div></div>`, 'paula-pat-quick-actions');
+      const quick = document.getElementById('paula-pat-quick-actions');
+      insertAfter(quick, buildMoneyStrip(), 'paula-money-strip');
+      const totalCard = document.getElementById('pat-cuentas');
+      insertBefore(totalCard, syncHistoryHTML()+backupButtonsHTML(), 'paula-sync-history');
+    }
+    const mov = document.getElementById('panel-movimientos');
+    if (mov) {
+      const tableCard = document.getElementById('txn-table')?.closest('.card');
+      insertBefore(tableCard, bizumClassifierHTML(), 'paula-bizum-classifier');
+    }
+  }
+
+  // Wrap render functions so injected blocks survive panel re-renders.
+  function wrapRender(name){
+    const original = window[name];
+    if (typeof original !== 'function' || original._paulaAdvancedWrapped) return;
+    window[name] = function(...args){
+      const res = original.apply(this,args);
+      setTimeout(injectAdvancedUI, 0);
+      return res;
+    };
+    window[name]._paulaAdvancedWrapped = true;
+  }
+
+  // Sync history + conflict layer.
+  function wrapSync(){
+    const oldBadge = window.updateSyncBadge;
+    if (typeof oldBadge === 'function' && !oldBadge._paulaAdvancedWrapped) {
+      window.updateSyncBadge = function(status, count, message){
+        advWrite({ lastSyncAt: new Date().toISOString(), lastSyncStatus: message || status || 'ok', lastDevice: getDeviceLabel() });
+        const res = oldBadge.apply(this, arguments);
+        setTimeout(injectAdvancedUI,0);
+        return res;
+      };
+      window.updateSyncBadge._paulaAdvancedWrapped = true;
+    }
+    const oldPull = window.pullStateFromGitHub;
+    if (typeof oldPull === 'function' && !oldPull._paulaAdvancedConflictWrapped && typeof readFileFromGitHub === 'function') {
+      window.pullStateFromGitHub = async function(cfg){
+        try {
+          const file = await readFileFromGitHub(cfg, 'state.json');
+          if (!file || !file.items || typeof file.items !== 'object') return;
+          const s = file.items;
+          const meta = typeof readPaulaMeta === 'function' ? readPaulaMeta() : {};
+          const remoteUpdated = s.lastUpdated ? new Date(s.lastUpdated).getTime() : 0;
+          const localDirty = meta.localDirtyAt ? new Date(meta.localDirtyAt).getTime() : 0;
+          const foreign = typeof getPaulaClientId === 'function' ? s.clientId !== getPaulaClientId() : true;
+          if (foreign && localDirty && remoteUpdated && remoteUpdated > localDirty) {
+            const ok = confirm('Hay cambios más recientes en otro dispositivo.\n\nAceptar: usar la versión de GitHub.\nCancelar: mantener este dispositivo.');
+            if (!ok) return;
+          }
+          if (foreign && localDirty && remoteUpdated && localDirty > remoteUpdated) return;
+          if (typeof applyRemoteState === 'function') applyRemoteState(s);
+          if (typeof clearPaulaDirty === 'function') clearPaulaDirty(remoteUpdated || new Date().toISOString());
+          advWrite({ lastSyncAt:new Date().toISOString(), lastSyncStatus:'Recibido desde GitHub', lastRemoteDevice: s.clientId || 'otro dispositivo' });
+        } catch(e) {
+          console.warn('Advanced pull failed, fallback to original:', e);
+          return oldPull.apply(this, arguments);
+        }
+      };
+      window.pullStateFromGitHub._paulaAdvancedConflictWrapped = true;
+    }
+  }
+
+  function enhanceExistingActions(){
+    // Asegura que editar un movimiento de/hacia ahorro ajuste cuentas aunque el wrapper anterior no cubra todos los deltas.
+    const oldSaveEdit = window.saveEditTxn;
+    if (typeof oldSaveEdit === 'function' && !oldSaveEdit._paulaAdvancedSavingsWrapped) {
+      window.saveEditTxn = function(){
+        const before = transactions.find(x => x.id === editingIdx);
+        const oldCat = before ? before.category : null;
+        const oldAmount = before ? Number(before.amount)||0 : 0;
+        const newCat = document.getElementById('edit-txn-cat')?.value;
+        const result = oldSaveEdit.apply(this, arguments);
+        const after = transactions.find(x => x.id === editingIdx);
+        if (after && after.manual && oldCat !== newCat) {
+          const value = Math.abs(Number(after.amount)||oldAmount||0);
+          if (newCat === 'ahorro' && oldCat !== 'ahorro') {
+            after.amount = -value;
+            if (typeof moveMoneyToSavings === 'function') moveMoneyToSavings(value);
+          } else if (oldCat === 'ahorro' && newCat !== 'ahorro') {
+            if (typeof adjustMainCuentaBalance === 'function') adjustMainCuentaBalance(value);
+            if (typeof adjustSavingsCuentaBalance === 'function') adjustSavingsCuentaBalance(-value);
+          }
+          persistNow(); refreshAll();
+        }
+        return result;
+      };
+      window.saveEditTxn._paulaAdvancedSavingsWrapped = true;
+    }
+  }
+
+  function initAdvanced(){
+    ['renderDashboard','renderMovimientos','renderPatrimonio','renderRegla','renderAhorro','renderCategorias','renderRetos'].forEach(wrapRender);
+    wrapSync();
+    enhanceExistingActions();
+    injectAdvancedUI();
+    setInterval(() => { if (document.visibilityState === 'visible') injectAdvancedUI(); }, 15000);
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => setTimeout(initAdvanced, 1200));
+  else setTimeout(initAdvanced, 1200);
+})();
+</script>
 
 </body>
 </html>
