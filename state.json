@@ -395,7 +395,7 @@
     {
       "id": 1,
       "name": "imagin (cuenta principal)",
-      "saldo": 11203.05,
+      "saldo": 11197.05,
       "tipo": "corriente",
       "rent": 0,
       "emoji": "💜",
@@ -424,6 +424,17 @@
   "retos": [],
   "manualTxns": [
     {
+      "id": 1780930068715,
+      "name": "Comida",
+      "amount": -6,
+      "date": "2026-06-07T22:00:00.000Z",
+      "category": "restaurantes",
+      "note": "🤖 Añadido por Claude",
+      "impulsivo": false,
+      "manual": true,
+      "balanceApplied": true
+    },
+    {
       "id": 1780860731201,
       "name": "Ahorr9",
       "amount": -103,
@@ -444,5 +455,5 @@
     "txnType": "",
     "txnCat": ""
   },
-  "lastUpdated": "2026-06-07T20:26:09.470Z"
+  "lastUpdated": "2026-06-08T14:47:48.737Z"
 }
