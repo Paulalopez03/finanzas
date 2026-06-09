@@ -395,7 +395,7 @@
     {
       "id": 1,
       "name": "imagin (cuenta principal)",
-      "saldo": 11197.05,
+      "saldo": 11196.05,
       "tipo": "corriente",
       "rent": 0,
       "emoji": "💜",
@@ -447,7 +447,7 @@
     }
   ],
   "uiPrefs": {
-    "lastPanel": "movimientos",
+    "lastPanel": "patrimonio",
     "dashPeriod": "month_start",
     "reglaPeriod": "3",
     "reglaNomina": "1452.66",
@@ -455,5 +455,5 @@
     "txnType": "",
     "txnCat": ""
   },
-  "lastUpdated": "2026-06-09T18:16:24.943Z"
+  "lastUpdated": "2026-06-09T18:17:51.645Z"
 }
