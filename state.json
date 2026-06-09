@@ -395,7 +395,7 @@
     {
       "id": 1,
       "name": "imagin (cuenta principal)",
-      "saldo": 11196.05,
+      "saldo": 11191.05,
       "tipo": "corriente",
       "rent": 0,
       "emoji": "💜",
@@ -455,5 +455,5 @@
     "txnType": "",
     "txnCat": ""
   },
-  "lastUpdated": "2026-06-09T18:17:51.645Z"
+  "lastUpdated": "2026-06-09T18:18:04.877Z"
 }
