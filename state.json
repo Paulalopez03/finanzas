@@ -395,7 +395,7 @@
     {
       "id": 1,
       "name": "imagin (cuenta principal)",
-      "saldo": 11166.05,
+      "saldo": 11191.05,
       "tipo": "corriente",
       "rent": 0,
       "emoji": "💜",
@@ -424,17 +424,6 @@
   "retos": [],
   "manualTxns": [
     {
-      "id": 1781029115079,
-      "name": "PANADE",
-      "amount": -25,
-      "date": "2026-06-09T00:00:00.000Z",
-      "category": "restaurantes",
-      "note": "",
-      "impulsivo": false,
-      "manual": true,
-      "balanceApplied": true
-    },
-    {
       "id": 1781028923158,
       "name": "Comida",
       "amount": -6,
@@ -458,7 +447,7 @@
     }
   ],
   "uiPrefs": {
-    "lastPanel": "movimientos",
+    "lastPanel": "dashboard",
     "dashPeriod": "month_start",
     "reglaPeriod": "3",
     "reglaNomina": "1452.66",
@@ -466,5 +455,5 @@
     "txnType": "",
     "txnCat": ""
   },
-  "lastUpdated": "2026-06-09T18:19:00.266Z"
+  "lastUpdated": "2026-06-09T18:19:06.981Z"
 }
